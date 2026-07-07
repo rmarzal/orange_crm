@@ -112,6 +112,8 @@
   .kcard .kc-meta{font-size:11px;color:var(--ink-2);margin-top:3px;display:flex;justify-content:space-between;gap:6px}
   .kcard .kc-aov{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
   .kcard .kc-tipo{display:inline-block;font-size:10.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:5px;margin-top:5px}
+  .kcard .kc-dup{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--bad);background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle;cursor:help}
+  .kcard.is-dup{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
   .kcard .kc-desc{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stripe{height:3px;border-radius:3px;margin:-9px -10px 8px;}
 
@@ -162,7 +164,7 @@
       <h1>Pipeline Comercial · Funnel & Seguimiento</h1>
       <p class="sub">Prototipo funcional · <b id="rec-count">—</b> oportunidades · tus cambios se guardan en este navegador</p>
     </div>
-    <span class="proto-tag">Prototipo v11 · normalización de caracteres</span>
+    <span class="proto-tag">Prototipo v12 · duplicados + filtro BDM</span>
   </header>
 
   <div class="note">
@@ -441,10 +443,13 @@ function opDate(d){return d.apertura||(d.history&&d.history[0]&&d.history[0].d)|
 function semestreOf(d){const dt=opDate(d);if(!dt||dt.length<7)return"";const y=dt.slice(0,4),m=+dt.slice(5,7);if(!/^\d{4}$/.test(y)||!m)return"";return (m<=6?"H1":"H2")+" "+y;}
 
 const uniq=(k)=>[...new Set(DATA.map(d=>d[k]))].filter(x=>x&&x!=="—").sort((a,b)=>a.localeCompare(b,'es'));
+/* clientes que aparecen en más de una oportunidad (posibles duplicados) */
+function dupCounts(){const c={};DATA.forEach(d=>{const k=normKey(d.cliente);if(k&&k!=="—")c[k]=(c[k]||0)+1;});return c;}
 const eur=(n)=>n>=1000000?("€"+(n/1e6).toFixed(2)+"M"):n>=1000?("€"+Math.round(n/1000)+"K"):("€"+Math.round(n));
 const FILTER_DEFS=[{k:"region",label:"Territorio"},{k:"bdm",label:"BDM"},{k:"kam",label:"KAM"},{k:"sector",label:"Sector"},{k:"tipologia",label:"Tipología"},{k:"estado",label:"Estado"}];
 const state={};FILTER_DEFS.forEach(f=>state[f.k]="");
 state.semestre="";state.dateFrom="";state.dateTo="";
+state.bdm="Rubén";   // filtro BDM por defecto
 let bdMode="region",funnelMode="count",searchTerm="";
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
@@ -541,13 +546,16 @@ function renderTable(rows){
   document.getElementById("table-count").textContent=rows.length+" registros";
 }
 function renderBoard(rows){
+  const dup=dupCounts();
   const cols=ALL_STAGES.map(s=>{
     const items=rows.filter(d=>d.estado===s).sort((a,b)=>b.aov-a.aov);
     const val=items.reduce((x,d)=>x+d.aov,0);
     const cards=items.slice(0,40).map(d=>{const sem=semestreOf(d);
       const tipo=(d.tipologia&&d.tipologia!=="Sin tipología")?`<span class="kc-tipo">${escHtml(d.tipologia)}</span>`:"";
       const desc=d.desc?`<div class="kc-desc" title="${escHtml(d.desc)}">${escHtml(d.desc)}</div>`:"";
-      return `<div class="kcard" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
+      const n=dup[normKey(d.cliente)]||1;const isDup=n>1;
+      const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
+      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
