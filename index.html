@@ -183,6 +183,7 @@
   .trash-item{cursor:default}
   .btn-restore{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:4px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink)}
   .btn-restore:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .rev-actions{display:flex;gap:10px;flex-wrap:wrap;margin:0 2px 12px}
   .notice{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.32);opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;z-index:80;max-width:88vw;text-align:center}
   .notice.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -270,6 +271,7 @@
     <div id="uncls"></div>
     <h2 class="rev-h" style="margin-top:26px">Papelera (eliminadas)</h2>
     <p class="hint" style="margin:-6px 2px 12px">Oportunidades que has eliminado. Se <b>conservan entre sesiones</b> en este navegador para dejar registro; <b>no cuentan en métricas ni informes</b>. Pulsa <b>Restaurar</b> para recuperar una.</p>
+    <div class="rev-actions"><button class="reset" id="trash-export">⬇ Exportar papelera CSV</button><button class="reset" id="trash-clear">🗑 Vaciar papelera</button></div>
     <div class="dup-summary" id="trash-summary"></div>
     <div id="trash"></div>
   </section>
@@ -883,6 +885,20 @@ document.getElementById('export').addEventListener('click',()=>{
   const csv=[cols.join(";")].concat(filtered().map(d=>cols.map(c=>esc(d[c])).join(";"))).join("\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);a.download="pipeline_comercial.csv";a.click();
+});
+/* papelera: exportar CSV y vaciar */
+document.getElementById('trash-export').addEventListener('click',()=>{
+  if(!TRASH||!TRASH.length){uiNotice("La papelera está vacía");return;}
+  const cols=["deletedAt","cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","apertura","cierre","partner"];
+  const esc=(v)=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv=[cols.join(";")].concat(TRASH.map(d=>cols.map(c=>esc(d[c])).join(";"))).join("\n");
+  const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="papelera_eliminadas.csv";a.click();
+});
+document.getElementById('trash-clear').addEventListener('click',async()=>{
+  if(!TRASH||!TRASH.length){uiNotice("La papelera ya está vacía");return;}
+  if(!(await uiConfirm(`¿Vaciar la papelera? Se borrará el registro de ${TRASH.length} eliminada(s). No afecta a tus datos actuales.`,"Vaciar")))return;
+  TRASH=[];saveTrash();renderTrash();uiNotice("Papelera vaciada");
 });
 /* importar / actualizar desde .xlsx */
 document.getElementById('import').addEventListener('click',()=>document.getElementById('importfile').click());
