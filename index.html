@@ -595,7 +595,7 @@ function renderKpis(rows){
   const wr=decided?Math.round(won.length/decided*100):0;
   const kpis=[
     {label:"Oportunidades",val:open.length,sub:"abiertas · de "+rows.length+" en total",dot:"var(--s2)"},
-    {label:"Valor pipeline (AOV)",val:eur(pipeVal),sub:open.length+" abiertas · sin perdidas",dot:"var(--s2)"},
+    {label:"Valor pipeline (AOV)",val:eur(pipeVal),sub:open.length+" abiertas",dot:"var(--s2)"},
     {label:"Ganadas",val:won.length,sub:eur(wonVal)+" ganado",dot:"var(--good)"},
     {label:"Ganado",val:eur(wonVal),sub:won.length+" cerradas",dot:"var(--good)"},
     {label:"Perdidas",val:lost.length,sub:eur(lostVal)+" perdido",dot:"var(--bad)"},
