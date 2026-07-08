@@ -180,6 +180,9 @@
   .dup-item .di-meta{color:var(--ink-3);font-size:12px;white-space:nowrap}
   .dup-item .di-aov{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:64px}
   @media(max-width:640px){.dup-item{grid-template-columns:1fr auto}.dup-item .di-tipo,.dup-item .di-meta{display:none}}
+  .trash-item{cursor:default}
+  .btn-restore{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:4px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink)}
+  .btn-restore:hover{border-color:var(--accent);color:var(--accent-ink)}
   .notice{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.32);opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;z-index:80;max-width:88vw;text-align:center}
   .notice.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -265,6 +268,10 @@
     <p class="hint" style="margin:-6px 2px 12px">Oportunidades cuyo <b>estado no se reconoció</b> al importar (celda vacía o valor no estándar). <b>No entran en ninguna métrica</b> hasta clasificarlas: clic en una fila para asignarle estado.</p>
     <div class="dup-summary" id="uncls-summary"></div>
     <div id="uncls"></div>
+    <h2 class="rev-h" style="margin-top:26px">Papelera (eliminadas)</h2>
+    <p class="hint" style="margin:-6px 2px 12px">Oportunidades que has eliminado. Se <b>conservan entre sesiones</b> en este navegador para dejar registro; <b>no cuentan en métricas ni informes</b>. Pulsa <b>Restaurar</b> para recuperar una.</p>
+    <div class="dup-summary" id="trash-summary"></div>
+    <div id="trash"></div>
   </section>
 
   <!-- REPORTS -->
@@ -493,6 +500,18 @@ function rowsToData(rows){const out=[];let id=1;const num=(x)=>{const n=parseFlo
   return quantifyKo(standardize(out));}
 let DATA=load();let nextId=Math.max(0,...DATA.map(d=>d.id))+1;
 function load(){try{const s=localStorage.getItem(LS_KEY);if(s)return JSON.parse(s);}catch(e){}return seed();}
+/* papelera persistente: registro de oportunidades eliminadas (sobrevive entre sesiones) */
+const LS_TRASH_KEY=LS_KEY+"_trash";
+let TRASH=loadTrash();
+function loadTrash(){try{const s=localStorage.getItem(LS_TRASH_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
+function saveTrash(){try{localStorage.setItem(LS_TRASH_KEY,JSON.stringify(TRASH));}catch(e){}}
+if(TRASH===null){   // primera vez: reconstruye las ya eliminadas comparando los datos actuales con el Excel original
+  TRASH=[];
+  try{const present=new Set(DATA.map(d=>d.id));
+    seed().forEach(o=>{if(!present.has(o.id))TRASH.push({...o,deletedAt:"",reconstruida:true});});
+  }catch(e){}
+  saveTrash();
+}
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}}
 
 /* diálogos propios (confirm/alert nativos no funcionan en el iframe del artifact) */
@@ -564,7 +583,7 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderTrash();renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
@@ -659,6 +678,25 @@ function renderUncls(rows){
     return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
   list.innerHTML=`<div class="dup-group warn"><div class="dup-items">${rowsHtml}</div></div>`;
   document.querySelectorAll('#uncls .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
+}
+
+/* papelera: oportunidades eliminadas, conservadas entre sesiones */
+function renderTrash(){
+  const sum=document.getElementById("trash-summary"),list=document.getElementById("trash");
+  if(!TRASH||!TRASH.length){sum.innerHTML="";list.innerHTML=`<div class="card"><p class="hint" style="margin:0">La papelera está vacía.</p></div>`;return;}
+  const total=TRASH.reduce((s,d)=>s+(d.aov||0),0);
+  sum.innerHTML=`<b>${TRASH.length}</b> eliminadas${total?` · ${eur(total)}`:""} · se conservan para la próxima sesión`;
+  const items=TRASH.map((d,i)=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
+    const when=d.deletedAt?"borrada "+d.deletedAt:(d.reconstruida?"sesión anterior":"");
+    return `<div class="dup-item trash-item"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)}${when?" · "+when:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span><button class="btn-restore" data-i="${i}">Restaurar</button></div>`;}).join("");
+  list.innerHTML=`<div class="dup-group"><div class="dup-items">${items}</div></div>`;
+  document.querySelectorAll('#trash .btn-restore').forEach(b=>b.addEventListener('click',()=>restoreTrash(+b.dataset.i)));
+}
+function restoreTrash(i){
+  const d=TRASH[i];if(!d)return;
+  const {deletedAt,reconstruida,...opp}=d;
+  if(DATA.some(x=>x.id===opp.id))opp.id=nextId++;   // evita choque de id
+  DATA.push(opp);TRASH.splice(i,1);saveTrash();buildAllFilters();render();uiNotice("Oportunidad restaurada");
 }
 
 /* ---- pestaña Reports: informe automático por BDM ---- */
@@ -799,9 +837,12 @@ document.getElementById("m-save").addEventListener("click",()=>{
 });
 document.getElementById("m-del").addEventListener("click",async()=>{
   const id=editId;
-  if(!(await uiConfirm("¿Eliminar esta oportunidad? Esta acción no se puede deshacer.","Eliminar")))return;
-  DATA=DATA.filter(x=>x.id!==id);closeModal();buildAllFilters();render();
-  uiNotice("Oportunidad eliminada");
+  if(!(await uiConfirm("¿Eliminar esta oportunidad? Quedará en la papelera (pestaña Revisión).","Eliminar")))return;
+  const removed=DATA.find(x=>x.id===id);
+  DATA=DATA.filter(x=>x.id!==id);
+  if(removed){TRASH.unshift({...removed,deletedAt:today()});saveTrash();}
+  closeModal();buildAllFilters();render();
+  uiNotice("Oportunidad eliminada · guardada en Revisión › Papelera");
 });
 
 /* tabs */
@@ -835,7 +876,7 @@ document.getElementById('oppform').addEventListener('submit',e=>{
 
 /* toolbar */
 document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
-document.getElementById('restore').addEventListener('click',async()=>{if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;buildAllFilters();render();uiNotice("Datos restaurados");});
+document.getElementById('restore').addEventListener('click',async()=>{if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;TRASH=[];saveTrash();buildAllFilters();render();uiNotice("Datos restaurados");});
 document.getElementById('export').addEventListener('click',()=>{
   const cols=["cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","cierre","partner"];
   const esc=(v)=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
