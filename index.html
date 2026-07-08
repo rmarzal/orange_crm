@@ -164,6 +164,7 @@
   .rep-empty{font-size:13px;color:var(--ink-3);padding:2px 0}
   /* duplicados */
   .dup-summary{font-size:13px;color:var(--ink-2);margin:0 2px 14px}
+  .rev-h{font-size:15px;font-weight:700;margin:0 2px 6px}
   .dup-summary b{color:var(--ink)}
   .dup-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
   .dup-group.warn{border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
@@ -214,7 +215,7 @@
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="dash">Embudo & Dashboard</button>
     <button role="tab" aria-selected="false" data-tab="board">Tablero</button>
-    <button role="tab" aria-selected="false" data-tab="dups">Duplicados</button>
+    <button role="tab" aria-selected="false" data-tab="dups">Revisión</button>
     <button role="tab" aria-selected="false" data-tab="reports">Reports</button>
     <button role="tab" aria-selected="false" data-tab="form">Nueva oportunidad</button>
     <button role="tab" aria-selected="false" data-tab="table">Registros</button>
@@ -253,12 +254,17 @@
     <div class="board" id="kanban"></div>
   </section>
 
-  <!-- DUPLICADOS -->
+  <!-- REVISIÓN (duplicados + sin clasificar) -->
   <section class="panel" id="dups">
     <div class="filters" id="filters4"></div>
+    <h2 class="rev-h">Clientes duplicados</h2>
     <p class="hint" style="margin:-6px 2px 12px">Clientes que aparecen en <b>más de una oportunidad activa</b> dentro del filtro actual (por defecto, las tuyas; <b>las perdidas/KO no cuentan</b>). Revisa cada grupo y <b>fusiona o elimina</b> las que sean la misma: clic en una fila para editarla o borrarla.</p>
     <div class="dup-summary" id="dup-summary"></div>
     <div id="duplist"></div>
+    <h2 class="rev-h" style="margin-top:26px">Sin clasificar</h2>
+    <p class="hint" style="margin:-6px 2px 12px">Oportunidades cuyo <b>estado no se reconoció</b> al importar (celda vacía o valor no estándar). <b>No entran en ninguna métrica</b> hasta clasificarlas: clic en una fila para asignarle estado.</p>
+    <div class="dup-summary" id="uncls-summary"></div>
+    <div id="uncls"></div>
   </section>
 
   <!-- REPORTS -->
@@ -558,7 +564,7 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
@@ -640,6 +646,19 @@ function renderDups(rows){
     return `<div class="dup-group warn"><div class="dup-head"><span class="dup-name">${escHtml(g[0].cliente)}<span class="kc-dup">⚠ ×${g.length}</span></span><span class="dup-count">${g.length} oportunidades · ${eur(total)}</span></div><div class="dup-items">${items}</div></div>`;
   }).join("");
   document.querySelectorAll('#duplist .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
+}
+
+/* pestaña Revisión: oportunidades con estado no reconocido (fuera de toda métrica) */
+function renderUncls(rows){
+  const items=rows.filter(d=>d.estado==="Sin clasificar").sort((a,b)=>b.aov-a.aov);
+  const sum=document.getElementById("uncls-summary"),list=document.getElementById("uncls");
+  if(!items.length){sum.innerHTML="";list.innerHTML=`<div class="card"><p class="hint" style="margin:0">✓ Ninguna oportunidad sin clasificar en el filtro actual.</p></div>`;return;}
+  const total=items.reduce((s,d)=>s+d.aov,0);
+  sum.innerHTML=`<b>${items.length}</b> oportunidades sin clasificar${total?` · ${eur(total)}`:""}`;
+  const rowsHtml=items.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
+    return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
+  list.innerHTML=`<div class="dup-group warn"><div class="dup-items">${rowsHtml}</div></div>`;
+  document.querySelectorAll('#uncls .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
 }
 
 /* ---- pestaña Reports: informe automático por BDM ---- */
