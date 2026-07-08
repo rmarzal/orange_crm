@@ -139,6 +139,45 @@
   .sembadge{font-size:10px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:5px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent-ink)}
   .kc-date{font-size:11px;color:var(--ink-3);margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .f input[type="date"]{min-width:0;width:138px}
+  /* reports */
+  .rep-toolbar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+  .report{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;max-width:920px}
+  .report h2{font-size:21px;margin:0 0 2px;letter-spacing:-.02em}
+  .report .rep-sub{color:var(--ink-3);font-size:12.5px;margin:0 0 18px}
+  .rep-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  @media(max-width:640px){.rep-metrics{grid-template-columns:repeat(2,1fr)}}
+  .rep-metric{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+  .rep-metric .rm-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-3);font-weight:600}
+  .rep-metric .rm-val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px}
+  .rep-narr{font-size:14px;line-height:1.6;color:var(--ink);background:color-mix(in srgb,var(--accent) 7%,transparent);border-left:3px solid var(--accent);padding:13px 16px;border-radius:0 8px 8px 0;margin-bottom:24px}
+  .rep-narr p{margin:0 0 8px}.rep-narr p:last-child{margin:0}
+  .rep-section{margin-bottom:22px}
+  .rep-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-3);margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  .rep-opp{padding:9px 0;border-bottom:1px dashed var(--border)}
+  .rep-opp:last-child{border-bottom:0}
+  .rep-opp .ro-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .rep-opp .ro-cli{font-weight:700;font-size:14px}
+  .rep-opp .ro-val{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rep-opp .ro-meta{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .rep-opp .ro-desc{font-size:13px;color:var(--ink-2);margin-top:4px;line-height:1.45}
+  .rep-empty{font-size:13px;color:var(--ink-3);padding:2px 0}
+  /* duplicados */
+  .dup-summary{font-size:13px;color:var(--ink-2);margin:0 2px 14px}
+  .dup-summary b{color:var(--ink)}
+  .dup-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+  .dup-group.warn{border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
+  .dup-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 15px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+  .dup-name{font-size:14px;font-weight:700}
+  .dup-name .kc-dup{margin-left:8px}
+  .dup-count{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .dup-items{display:flex;flex-direction:column}
+  .dup-item{display:grid;grid-template-columns:120px 1fr auto auto;gap:12px;align-items:center;padding:9px 15px;border-top:1px solid var(--border);cursor:pointer;font-size:13px}
+  .dup-item:first-child{border-top:0}
+  .dup-item:hover{background:var(--surface-2)}
+  .dup-item .di-tipo{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dup-item .di-meta{color:var(--ink-3);font-size:12px;white-space:nowrap}
+  .dup-item .di-aov{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:64px}
+  @media(max-width:640px){.dup-item{grid-template-columns:1fr auto}.dup-item .di-tipo,.dup-item .di-meta{display:none}}
   .notice{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.32);opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;z-index:80;max-width:88vw;text-align:center}
   .notice.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -174,6 +213,8 @@
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="dash">Embudo & Dashboard</button>
     <button role="tab" aria-selected="false" data-tab="board">Tablero</button>
+    <button role="tab" aria-selected="false" data-tab="dups">Duplicados</button>
+    <button role="tab" aria-selected="false" data-tab="reports">Reports</button>
     <button role="tab" aria-selected="false" data-tab="form">Nueva oportunidad</button>
     <button role="tab" aria-selected="false" data-tab="table">Registros</button>
   </nav>
@@ -209,6 +250,23 @@
     <div class="filters" id="filters3"></div>
     <p class="hint" style="margin:-6px 2px 12px">Arrastra una tarjeta a otra columna para cambiar su estado — se registra en el histórico. Clic para editar.</p>
     <div class="board" id="kanban"></div>
+  </section>
+
+  <!-- DUPLICADOS -->
+  <section class="panel" id="dups">
+    <div class="filters" id="filters4"></div>
+    <p class="hint" style="margin:-6px 2px 12px">Clientes que aparecen en <b>más de una oportunidad activa</b> dentro del filtro actual (por defecto, las tuyas; <b>las perdidas/KO no cuentan</b>). Revisa cada grupo y <b>fusiona o elimina</b> las que sean la misma: clic en una fila para editarla o borrarla.</p>
+    <div class="dup-summary" id="dup-summary"></div>
+    <div id="duplist"></div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="panel" id="reports">
+    <div class="rep-toolbar">
+      <div class="f"><label>Informe de BDM</label><select id="rep-bdm"></select></div>
+      <button class="reset" id="rep-print">🖨 Imprimir / PDF</button>
+    </div>
+    <div id="report"></div>
   </section>
 
   <!-- FORM -->
@@ -332,6 +390,7 @@ function canonKam(v){if(v==null)return"—";const s=String(v).trim();return CANO
 function canonCliente(v){if(v==null)return"—";const s=String(v).trim();return CANON_CLIENTE[s.toLowerCase()]||s;}
 
 const STAGES=["Sin empezar","En proceso","Oferta enviada","Ganada"];
+const OPEN_STAGES=["Sin empezar","En proceso","Oferta enviada"];  // pipeline abierto (sin ganadas ni perdidas)
 const ALL_STAGES=[...STAGES,"Perdida / KO"];
 const STAGE_PROB={"Sin empezar":.1,"En proceso":.3,"Oferta enviada":.6,"Ganada":1,"Perdida / KO":0};
 const STAGE_COLOR={"Sin empezar":"var(--s4)","En proceso":"var(--s3)","Oferta enviada":"var(--s2)","Ganada":"var(--good)","Perdida / KO":"var(--bad)"};
@@ -443,14 +502,14 @@ function opDate(d){return d.apertura||(d.history&&d.history[0]&&d.history[0].d)|
 function semestreOf(d){const dt=opDate(d);if(!dt||dt.length<7)return"";const y=dt.slice(0,4),m=+dt.slice(5,7);if(!/^\d{4}$/.test(y)||!m)return"";return (m<=6?"H1":"H2")+" "+y;}
 
 const uniq=(k)=>[...new Set(DATA.map(d=>d[k]))].filter(x=>x&&x!=="—").sort((a,b)=>a.localeCompare(b,'es'));
-/* clientes que aparecen en más de una oportunidad (posibles duplicados) */
-function dupCounts(){const c={};DATA.forEach(d=>{const k=normKey(d.cliente);if(k&&k!=="—")c[k]=(c[k]||0)+1;});return c;}
+/* clientes que aparecen en más de una oportunidad (posibles duplicados) — sin contar KO */
+function dupCounts(){const c={};DATA.forEach(d=>{if(d.estado==="Perdida / KO")return;const k=normKey(d.cliente);if(k&&k!=="—")c[k]=(c[k]||0)+1;});return c;}
 const eur=(n)=>n>=1000000?("€"+(n/1e6).toFixed(2)+"M"):n>=1000?("€"+Math.round(n/1000)+"K"):("€"+Math.round(n));
 const FILTER_DEFS=[{k:"region",label:"Territorio"},{k:"bdm",label:"BDM"},{k:"kam",label:"KAM"},{k:"sector",label:"Sector"},{k:"tipologia",label:"Tipología"},{k:"estado",label:"Estado"}];
 const state={};FILTER_DEFS.forEach(f=>state[f.k]="");
 state.semestre="";state.dateFrom="";state.dateTo="";
 state.bdm="Rubén";   // filtro BDM por defecto
-let bdMode="region",funnelMode="count",searchTerm="";
+let bdMode="region",funnelMode="count",searchTerm="",repBdm="Rubén";
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
 function buildFilters(container){
@@ -498,17 +557,17 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const total=rows.length,active=rows.filter(d=>STAGES.includes(d.estado));
-  const activeVal=active.reduce((s,d)=>s+d.aov,0);
+  const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
   const won=rows.filter(d=>d.estado==="Ganada"),wonVal=won.reduce((s,d)=>s+d.aov,0);
   const decided=rows.filter(d=>d.estado==="Ganada"||d.estado==="Perdida / KO").length;
   const wr=decided?Math.round(won.length/decided*100):0;
   const kpis=[
     {label:"Oportunidades",val:total,sub:active.length+" activas",dot:"var(--s2)"},
-    {label:"Valor pipeline (AOV)",val:eur(activeVal),sub:"solo activas",dot:"var(--s2)"},
+    {label:"Valor pipeline (AOV)",val:eur(pipeVal),sub:open.length+" abiertas · sin perdidas",dot:"var(--s2)"},
     {label:"Ganado",val:eur(wonVal),sub:won.length+" cerradas",dot:"var(--good)"},
     {label:"Win rate",val:wr+"%",sub:won.length+"/"+decided+" decididas",dot:wr>=50?"var(--good)":"var(--warn)"}
   ];
@@ -553,13 +612,84 @@ function renderBoard(rows){
     const cards=items.slice(0,40).map(d=>{const sem=semestreOf(d);
       const tipo=(d.tipologia&&d.tipologia!=="Sin tipología")?`<span class="kc-tipo">${escHtml(d.tipologia)}</span>`:"";
       const desc=d.desc?`<div class="kc-desc" title="${escHtml(d.desc)}">${escHtml(d.desc)}</div>`:"";
-      const n=dup[normKey(d.cliente)]||1;const isDup=n>1;
+      const n=dup[normKey(d.cliente)]||1;const isDup=d.estado!=="Perdida / KO"&&n>1;
       const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
       return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
   k.querySelectorAll('.kcard').forEach(c=>c.addEventListener('click',()=>{if(!dragId)openEdit(+c.dataset.id);}));
+}
+
+/* pestaña Duplicados: agrupa por cliente las oportunidades repetidas del filtro actual */
+function renderDups(rows){
+  const groups={};
+  rows.forEach(d=>{if(d.estado==="Perdida / KO")return;const k=normKey(d.cliente);if(!k||k==="—")return;(groups[k]=groups[k]||[]).push(d);});
+  const dupGroups=Object.values(groups).filter(g=>g.length>1).sort((a,b)=>b.length-a.length||b.reduce((s,d)=>s+d.aov,0)-a.reduce((s,d)=>s+d.aov,0));
+  const affected=dupGroups.reduce((s,g)=>s+g.length,0);
+  const sum=document.getElementById("dup-summary");
+  if(!dupGroups.length){sum.innerHTML="";document.getElementById("duplist").innerHTML=`<div class="card"><p class="hint" style="margin:0">✓ Sin clientes duplicados en el filtro actual.</p></div>`;return;}
+  sum.innerHTML=`<b>${dupGroups.length}</b> clientes con posibles duplicados · <b>${affected}</b> oportunidades afectadas`;
+  document.getElementById("duplist").innerHTML=dupGroups.map(g=>{
+    const total=g.reduce((s,d)=>s+d.aov,0);
+    const items=g.sort((a,b)=>b.aov-a.aov).map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
+      return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${d.estado}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
+    return `<div class="dup-group warn"><div class="dup-head"><span class="dup-name">${escHtml(g[0].cliente)}<span class="kc-dup">⚠ ×${g.length}</span></span><span class="dup-count">${g.length} oportunidades · ${eur(total)}</span></div><div class="dup-items">${items}</div></div>`;
+  }).join("");
+  document.querySelectorAll('#duplist .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
+}
+
+/* ---- pestaña Reports: informe automático por BDM ---- */
+function repDesc(d){const t=d.desc?(d.desc.length>220?d.desc.slice(0,220)+"…":d.desc):"";return t?escHtml(t):'<span style="color:var(--ink-3)">Sin descripción registrada</span>';}
+function repOpp(d){return `<div class="rep-opp"><div class="ro-head"><span class="ro-cli">${escHtml(d.cliente)}</span><span class="ro-val">${d.aov?eur(d.aov):"—"}</span></div><div class="ro-meta">${escHtml(d.tipologia)} · ${escHtml(d.estado)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}${d.motivo_ko?" · Motivo KO: "+escHtml(d.motivo_ko):""}</div><div class="ro-desc">${repDesc(d)}</div></div>`;}
+function repSection(title,list,emptyMsg){return `<div class="rep-section"><h3>${title}</h3>${list.length?list.map(repOpp).join(""):`<div class="rep-empty">${emptyMsg}</div>`}</div>`;}
+function populateRep(){const sel=document.getElementById("rep-bdm");if(!sel)return;const opts=uniq("bdm");if(!opts.includes(repBdm))repBdm=opts.includes("Rubén")?"Rubén":(opts[0]||"");sel.innerHTML=opts.map(o=>`<option${o===repBdm?" selected":""}>${o}</option>`).join("");}
+function renderReport(){
+  const host=document.getElementById("report");if(!host)return;
+  const bdm=repBdm;const rows=DATA.filter(d=>d.bdm===bdm);
+  if(!rows.length){host.innerHTML=`<div class="report"><p class="rep-empty">Sin oportunidades para ${escHtml(bdm)}.</p></div>`;return;}
+  const sum=(a)=>a.reduce((s,d)=>s+d.aov,0);
+  const open=rows.filter(d=>OPEN_STAGES.includes(d.estado));
+  const offers=rows.filter(d=>d.estado==="Oferta enviada").sort((a,b)=>b.aov-a.aov);
+  const won=rows.filter(d=>d.estado==="Ganada").sort((a,b)=>b.aov-a.aov);
+  const ko=rows.filter(d=>d.estado==="Perdida / KO").sort((a,b)=>b.aov-a.aov);
+  const decided=won.length+ko.length,wr=decided?Math.round(won.length/decided*100):0;
+  const koPct=Math.round(ko.length/rows.length*100),datePct=Math.round(rows.filter(d=>d.apertura).length/rows.length*100);
+  // medias equipo
+  const tW=DATA.filter(d=>d.estado==="Ganada").length,tK=DATA.filter(d=>d.estado==="Perdida / KO").length;
+  const teamWr=(tW+tK)?Math.round(tW/(tW+tK)*100):0;
+  const teamDate=DATA.length?Math.round(DATA.filter(d=>d.apertura).length/DATA.length*100):0;
+  // duplicados del bdm
+  const grp={};rows.forEach(d=>{if(d.estado==="Perdida / KO")return;const k=normKey(d.cliente);if(k&&k!=="—")(grp[k]=grp[k]||[]).push(d);});
+  const dupG=Object.values(grp).filter(g=>g.length>1);const dupAff=dupG.reduce((s,g)=>s+g.length,0);
+  const topOpen=open.filter(d=>d.estado!=="Oferta enviada").sort((a,b)=>b.aov-a.aov).slice(0,5);
+  // narrativa
+  const P=[];
+  P.push(`<b>${escHtml(bdm)}</b> gestiona <b>${rows.length}</b> oportunidades: ${open.length} abiertas (${eur(sum(open))} en pipeline), ${won.length} ganadas (${eur(sum(won))}) y ${ko.length} perdidas.`);
+  P.push(`Su tasa de conversión es del <b>${wr}%</b>, ${wr>=teamWr?"por encima de":wr===teamWr?"en línea con":"por debajo de"} la media del equipo (${teamWr}%).`);
+  if(datePct>=teamDate+15)P.push(`Destaca en <b>disciplina de datos</b>: el ${datePct}% de sus oportunidades tienen fecha de apertura registrada, muy por encima de la media (${teamDate}%).`);
+  if(koPct>=40)P.push(`⚠️ El <b>${koPct}%</b> de su cartera está en pérdida; conviene revisar la cualificación de entrada para no inflar el ratio de KO.`);
+  if(offers.length)P.push(`Tiene <b>${offers.length}</b> oferta(s) enviada(s) por ${eur(sum(offers))} — su principal palanca de cierre a corto plazo.`);
+  if(dupG.length)P.push(`Hay <b>${dupG.length}</b> clientes duplicados (${dupAff} oportunidades) pendientes de consolidar, que pueden estar distorsionando sus métricas.`);
+  const html=`<div class="report">
+    <h2>Informe comercial — ${escHtml(bdm)}</h2>
+    <p class="rep-sub">Generado el ${today()} · a partir de los datos actuales del pipeline</p>
+    <div class="rep-metrics">
+      <div class="rep-metric"><div class="rm-lbl">Oportunidades</div><div class="rm-val">${rows.length}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Pipeline abierto</div><div class="rm-val">${eur(sum(open))}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Ganado</div><div class="rm-val">${eur(sum(won))}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Win rate</div><div class="rm-val">${wr}%</div></div>
+      <div class="rep-metric"><div class="rm-lbl">En KO</div><div class="rm-val">${ko.length} · ${koPct}%</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Duplicados</div><div class="rm-val">${dupG.length}</div></div>
+    </div>
+    <div class="rep-narr">${P.map(p=>`<p>${p}</p>`).join("")}</div>
+    ${repSection("🎯 Prioridad de cierre · ofertas enviadas",offers.slice(0,8),"No hay ofertas enviadas pendientes.")}
+    ${repSection("💼 Mayor valor en curso (sin ofertas)",topOpen,"Sin oportunidades abiertas fuera de ofertas.")}
+    ${repSection("🏆 Ganadas",won.slice(0,6),"Aún sin oportunidades ganadas.")}
+    ${repSection("📉 Pérdidas destacadas",ko.slice(0,5),"Sin pérdidas registradas.")}
+    ${dupG.length?`<div class="rep-section"><h3>♻️ Duplicados a resolver</h3>${dupG.sort((a,b)=>b.length-a.length).map(g=>`<div class="rep-opp"><div class="ro-head"><span class="ro-cli">${escHtml(g[0].cliente)} <span class="kc-dup">⚠ ×${g.length}</span></span><span class="ro-val">${eur(sum(g))}</span></div><div class="ro-meta">${g.map(d=>d.estado).join(" · ")}</div></div>`).join("")}</div>`:""}
+  </div>`;
+  host.innerHTML=html;
 }
 
 /* arrastrar tarjetas entre columnas -> cambia estado + histórico */
@@ -706,9 +836,12 @@ document.getElementById('importfile').addEventListener('change',async e=>{
   }catch(err){uiNotice("No se pudo leer el archivo: "+err.message);}
 });
 
-function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));fillFormSelects();}
+function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));buildFilters(document.getElementById('filters4'));fillFormSelects();populateRep();}
+document.getElementById('rep-bdm').addEventListener('change',e=>{repBdm=e.target.value;renderReport();});
+document.getElementById('rep-print').addEventListener('click',()=>window.print());
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});
+document.getElementById('filters4').addEventListener('change',()=>{syncFilters();render();});
 buildAllFilters();render();
 </script>
 
