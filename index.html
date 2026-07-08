@@ -577,6 +577,12 @@ function syncFilters(){
   document.querySelectorAll('[data-from]').forEach(s=>{s.value=state.dateFrom;});
   document.querySelectorAll('[data-to]').forEach(s=>{s.value=state.dateTo;});
 }
+/* aviso tras guardar un cambio; si la oportunidad queda fuera de los filtros actuales, lo indica */
+function notifySaved(d,label){
+  if(!d){uiNotice(label);return;}
+  const hidden=!filtered().some(x=>x.id===d.id);
+  uiNotice(hidden?`${label} · guardado, pero oculto por los filtros actuales`:`${label} · guardado`);
+}
 function filtered(){return DATA.filter(d=>{
   if(!FILTER_DEFS.every(f=>!state[f.k]||d[f.k]===state[f.k]))return false;
   if(searchTerm&&!normKey(d.cliente).includes(searchTerm))return false;
@@ -767,6 +773,7 @@ function applyStage(d,newStage,motivo,via){
   d.history.push({d:today(),t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
   d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";
   buildAllFilters();render();
+  notifySaved(d,`${d.cliente} → ${newStage}`);
 }
 /* modal motivo KO */
 let koId=null;
@@ -799,7 +806,7 @@ function openEdit(id){
   document.getElementById("m-title").textContent=d.cliente;
   document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`;
   document.getElementById("m-cliente").value=d.cliente;
-  fillSel(document.getElementById("m-estado"),ALL_STAGES,d.estado);
+  fillSel(document.getElementById("m-estado"),ALL_STAGES.includes(d.estado)?ALL_STAGES:[d.estado,...ALL_STAGES],d.estado);
   fillSel(document.getElementById("m-region"),REGIONS,d.region);
   fillSel(document.getElementById("m-bdm"),uniq("bdm"),d.bdm);
   document.getElementById("m-aov").value=d.aov||"";
@@ -836,6 +843,7 @@ document.getElementById("m-save").addEventListener("click",()=>{
   d.cliente=document.getElementById("m-cliente").value.trim()||d.cliente;
   d.estado=nEstado;d.aov=nAov;d.region=nReg;d.bdm=nBdm;d.apertura=nApertura;d.cierre=nCierre;d.motivo_ko=nMotivo;
   closeModal();buildAllFilters();render();
+  notifySaved(d,`${d.cliente} → ${nEstado}`);
 });
 document.getElementById("m-del").addEventListener("click",async()=>{
   const id=editId;
