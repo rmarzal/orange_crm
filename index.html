@@ -115,6 +115,7 @@
   .kcard .kc-tipo{display:inline-block;font-size:10.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:5px;margin-top:5px}
   .kcard .kc-dup{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--bad);background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle;cursor:help}
   .kcard.is-dup{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
+  .kc-rev{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle}
   .kcard .kc-desc{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stripe{height:3px;border-radius:3px;margin:-9px -10px 8px;}
 
@@ -277,6 +278,10 @@
     <p class="hint" style="margin:-6px 2px 12px">Oportunidades cuyo <b>estado no se reconoció</b> al importar (celda vacía o valor no estándar). <b>No entran en ninguna métrica</b> hasta clasificarlas: clic en una fila para asignarle estado.</p>
     <div class="dup-summary" id="uncls-summary"></div>
     <div id="uncls"></div>
+    <h2 class="rev-h" style="margin-top:26px">Casos a revisar</h2>
+    <p class="hint" style="margin:-6px 2px 12px">Oportunidades con un sub-estado del Excel (<b>KO - REVISAR CASO</b> / <b>STAND BY</b>). El estado se normaliza a <i>Perdida / KO</i>, pero se conserva esta <b>etiqueta aparte</b> para que las repases. Clic para editar.</p>
+    <div class="dup-summary" id="revisar-summary"></div>
+    <div id="revisar"></div>
     <h2 class="rev-h" style="margin-top:26px">Papelera (eliminadas)</h2>
     <p class="hint" style="margin:-6px 2px 12px">Oportunidades que has eliminado. Se <b>conservan entre sesiones</b> en este navegador para dejar registro; <b>no cuentan en métricas ni informes</b>. Pulsa <b>Restaurar</b> para recuperar una.</p>
     <div class="rev-actions"><button class="reset" id="trash-export">⬇ Exportar papelera CSV</button><button class="reset" id="trash-clear">🗑 Vaciar papelera</button></div>
@@ -329,6 +334,7 @@
       <input type="file" id="importfile" accept=".xlsx" style="display:none">
       <button class="btn" id="import" style="padding:8px 14px">⟳ Actualizar desde Excel</button>
       <button class="reset" id="export">⬇ Exportar CSV</button>
+      <button class="reset" id="normalize" title="Unifica sector y tipología (nombres equivalentes) en los datos ya cargados">🧹 Normalizar</button>
       <button class="reset" id="restore">↺ Restaurar Excel</button>
     </div>
     <div class="filters" id="filters2"></div>
@@ -412,6 +418,15 @@ const CANON_KAM={"angel fernandez":"Ángel Fernández Montoro","jorge de calatra
 const CANON_CLIENTE={"consulta ayuntamiento las palmas":"Ayuntamiento de Las Palmas","fain":"Fain Ascensores"};
 function canonKam(v){if(v==null)return"—";const s=String(v).trim();return CANON_KAM[s.toLowerCase()]||s;}
 function canonCliente(v){if(v==null)return"—";const s=String(v).trim();return CANON_CLIENTE[s.toLowerCase()]||s;}
+/* ---- correcciones de vocabulario: sector y tipología (misma cosa escrita distinto) ---- */
+const CANON_SECTOR={"real state":"Inmobiliario","real state/construccion":"Inmobiliario","inmobiliario":"Inmobiliario","alimentacion":"Alimentación","alimentacion retail":"Alimentación","bebidas":"Gran consumo","gran consumo":"Gran consumo","finanzas":"Banca","tech retail":"Retail","sanidad":"Sanidad","energia":"Energía","centro investigacion":"Centro Investigación","seguridad":"Seguridad"};
+const CANON_TIPO={"agente ia":"Agentes IA","agentes ia":"Agentes IA","agentes":"Agentes IA","gen ai":"IA Gen","ia gen":"IA Gen","ia clasica":"IA Clásica","consultoria":"Consultoría","consutloria":"Consultoría","conusltoria ia":"Consultoría","ml":"Machine Learning","machine learning":"Machine Learning"};
+function canonSector(v){const s=clean(v,"Sin sector");return CANON_SECTOR[normKey(s)]||s;}
+function canonTipologia(v){const s=clean(v,"Sin tipología");return CANON_TIPO[normKey(s)]||s;}
+/* sub-estado que NO va en el estado: "KO - REVISAR CASO"/"STAND BY" → etiqueta aparte */
+function revisarTag(v){if(v==null)return"";const s=String(v).toLowerCase();if(s.includes("revisar"))return"Revisar caso";if(s.includes("stand by")||s.includes("standby"))return"Stand by";return"";}
+/* aplica correcciones de sector/tipología a los datos ya cargados (no recupera el tag de revisar: ese se capta al importar) */
+function recanonizar(){DATA.forEach(d=>{d.sector=canonSector(d.sector);d.tipologia=canonTipologia(d.tipologia);});standardize(DATA);buildAllFilters();render();uiNotice("Datos normalizados (sector y tipología)");}
 
 const STAGES=["Sin empezar","En proceso","Oferta enviada","Ganada"];
 const OPEN_STAGES=["Sin empezar","En proceso","Oferta enviada"];  // pipeline abierto (sin ganadas ni perdidas)
@@ -469,8 +484,8 @@ function standardize(records){
 function seed(){
   return quantifyKo(standardize(RAW.map((o,i)=>({
     id:i+1,cliente:canonCliente(clean(o.cliente,"—")),region:normRegion(o.region),bdm:normBdm(o.bdm),kam:canonKam(clean(o.kam,"—")),
-    sector:clean(o.sector,"Sin sector"),tipologia:clean(o.tipologia,"Sin tipología"),
-    estado:normEstado(o.estado),aov:(typeof o.aov==="number")?o.aov:0,rec:(typeof o.rec==="number")?o.rec:0,
+    sector:canonSector(o.sector),tipologia:canonTipologia(o.tipologia),
+    estado:normEstado(o.estado),revisar:revisarTag(o.estado),aov:(typeof o.aov==="number")?o.aov:0,rec:(typeof o.rec==="number")?o.rec:0,
     apertura:o.apertura||"",cierre:o.cierre||"",partner:clean(o.partner,""),desc:clean(o.desc,""),motivo_ko:"",
     history:[{d:o.apertura||"",t:"Importado del Excel"}]
   }))));
@@ -506,7 +521,7 @@ async function readXlsx(file){
 function rowsToData(rows){const out=[];let id=1;const num=(x)=>{const n=parseFloat(x);return isNaN(n)?0:n;};
   for(const rn of Object.keys(rows).map(Number).sort((a,b)=>a-b)){if(rn===1)continue;const c=rows[rn];if(!c.D||String(c.D).trim()==="")continue;
     out.push({id:id++,cliente:canonCliente(clean(c.D,"—")),region:normRegion(c.K),bdm:normBdm(c.L),kam:canonKam(clean(c.G,"—")),
-      sector:clean(c.F,"Sin sector"),tipologia:clean(c.N,"Sin tipología"),estado:normEstado(c.P),
+      sector:canonSector(c.F),tipologia:canonTipologia(c.N),estado:normEstado(c.P),revisar:revisarTag(c.P),
       aov:num(c.B),rec:num(c.C),apertura:excelDate(c.S),cierre:excelDate(c.T),partner:clean(c.V,""),desc:clean(c.O,""),motivo_ko:"",
       history:[{d:excelDate(c.S),t:"Importado del Excel"}]});}
   return quantifyKo(standardize(out));}
@@ -602,7 +617,7 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderTrash();renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderRevisar(rows);renderTrash();renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
@@ -647,7 +662,7 @@ function renderTable(rows){
   const sorted=[...rows].sort((a,b)=>b.aov-a.aov);
   document.getElementById("tbody").innerHTML=sorted.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
     return `<tr data-id="${d.id}"><td>${d.cliente}</td><td>${d.region}</td><td>${d.bdm}</td><td>${d.kam}</td><td>${d.tipologia}</td>
-      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${d.estado}</span></td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
+      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${d.estado}</span>${d.revisar?` <span class="pill" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">⟳ ${escHtml(d.revisar)}</span>`:""}</td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
   document.querySelectorAll('#tbody tr').forEach(tr=>tr.addEventListener('click',()=>openEdit(+tr.dataset.id)));
   document.getElementById("table-count").textContent=rows.length+" registros";
 }
@@ -661,7 +676,8 @@ function renderBoard(rows){
       const desc=d.desc?`<div class="kc-desc" title="${escHtml(d.desc)}">${escHtml(d.desc)}</div>`:"";
       const n=dup[normKey(d.cliente)]||1;const isDup=d.estado!=="Perdida / KO"&&n>1;
       const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
-      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
+      const revBadge=d.revisar?`<span class="kc-rev" title="Sub-estado marcado en el Excel — a revisar">⟳ ${escHtml(d.revisar)}</span>`:"";
+      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
@@ -697,6 +713,19 @@ function renderUncls(rows){
     return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
   list.innerHTML=`<div class="dup-group warn"><div class="dup-items">${rowsHtml}</div></div>`;
   document.querySelectorAll('#uncls .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
+}
+
+/* casos a revisar: sub-estado del Excel conservado como etiqueta (no va en el estado) */
+function renderRevisar(rows){
+  const items=rows.filter(d=>d.revisar).sort((a,b)=>b.aov-a.aov);
+  const sum=document.getElementById("revisar-summary"),list=document.getElementById("revisar");
+  if(!sum||!list)return;
+  if(!items.length){sum.innerHTML="";list.innerHTML=`<div class="card"><p class="hint" style="margin:0">✓ Ningún caso a revisar en el filtro actual.</p></div>`;return;}
+  sum.innerHTML=`<b>${items.length}</b> oportunidades a revisar`;
+  const rowsHtml=items.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
+    return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">⟳ ${escHtml(d.revisar)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
+  list.innerHTML=`<div class="dup-group warn"><div class="dup-items">${rowsHtml}</div></div>`;
+  document.querySelectorAll('#revisar .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
 }
 
 /* papelera: oportunidades eliminadas, conservadas entre sesiones */
@@ -784,7 +813,7 @@ function applyStage(d,newStage,motivo,via){
   let extra="";
   if(newStage==="Perdida / KO"&&!d.aov){d.aov=KO_DEFAULT_AOV;extra=` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`;}
   d.history.push({d:today(),t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
-  d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";
+  d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";else d.revisar="";
   buildAllFilters();render();
   notifySaved(d,`${d.cliente} → ${newStage}`);
 }
@@ -817,7 +846,7 @@ function fillSel(el,opts,val){el.innerHTML=opts.map(o=>`<option${o===val?" selec
 function openEdit(id){
   const d=DATA.find(x=>x.id===id);if(!d)return;editId=id;
   document.getElementById("m-title").textContent=d.cliente;
-  document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`;
+  document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`+(d.revisar?` · ⟳ ${d.revisar}`:"");
   document.getElementById("m-cliente").value=d.cliente;
   fillSel(document.getElementById("m-estado"),ALL_STAGES.includes(d.estado)?ALL_STAGES:[d.estado,...ALL_STAGES],d.estado);
   fillSel(document.getElementById("m-region"),REGIONS,d.region);
@@ -856,6 +885,7 @@ document.getElementById("m-save").addEventListener("click",()=>{
   if(nota)d.history.push({d:today(),t:"Nota: "+nota});
   d.cliente=document.getElementById("m-cliente").value.trim()||d.cliente;
   d.estado=nEstado;d.aov=nAov;d.region=nReg;d.bdm=nBdm;d.apertura=nApertura;d.cierre=nCierre;d.motivo_ko=nMotivo;
+  if(nEstado!=="Perdida / KO")d.revisar="";
   closeModal();buildAllFilters();render();
   notifySaved(d,`${d.cliente} → ${nEstado}`);
 });
@@ -891,8 +921,8 @@ function fillFormSelects(){
 document.getElementById('oppform').addEventListener('submit',e=>{
   e.preventDefault();if(cloudBlocked())return;const fd=Object.fromEntries(new FormData(e.target).entries());
   const rec={id:nextId++,cliente:canonCliente(clean(fd.cliente,"—")),region:normRegion(fd.region),bdm:normBdm(fd.bdm),kam:canonKam(clean(fd.kam,"—")),
-    sector:clean(fd.sector,"Sin sector"),tipologia:clean(fd.tipologia,"Sin tipología"),
-    estado:normEstado(fd.estado),aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
+    sector:canonSector(fd.sector),tipologia:canonTipologia(fd.tipologia),
+    estado:normEstado(fd.estado),revisar:"",aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
     history:[{d:today(),t:"Creada"+(fd.notas?" · "+fd.notas.trim():"")}]};
   DATA.unshift(rec);e.target.reset();
   const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
@@ -901,6 +931,7 @@ document.getElementById('oppform').addEventListener('submit',e=>{
 
 /* toolbar */
 document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
+document.getElementById('normalize').addEventListener('click',()=>{if(cloudBlocked())return;recanonizar();});
 document.getElementById('restore').addEventListener('click',async()=>{if(cloudBlocked())return;if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;TRASH=[];saveTrash();buildAllFilters();render();uiNotice("Datos restaurados");});
 document.getElementById('export').addEventListener('click',()=>{
   const cols=["cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","cierre","partner"];
