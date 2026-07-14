@@ -221,7 +221,8 @@
     <button role="tab" aria-selected="true" data-tab="dash">Embudo & Dashboard</button>
     <button role="tab" aria-selected="false" data-tab="board">Tablero</button>
     <button role="tab" aria-selected="false" data-tab="dups">Revisión</button>
-    <button role="tab" aria-selected="false" data-tab="reports">Reports</button>
+    <!-- Reports oculto temporalmente (no necesario de momento) -->
+    <!-- <button role="tab" aria-selected="false" data-tab="reports">Reports</button> -->
     <button role="tab" aria-selected="false" data-tab="form">Nueva oportunidad</button>
     <button role="tab" aria-selected="false" data-tab="table">Registros</button>
   </nav>
@@ -608,7 +609,7 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderRevisar(rows);renderTrash();renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderRevisar(rows);renderTrash();/*renderReport();*/document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
