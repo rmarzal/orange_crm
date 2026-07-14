@@ -424,10 +424,12 @@ function normEstado(v){if(v==null)return"Sin clasificar";const s=String(v).trim(
   if(s.startsWith("ganada"))return"Ganada";if(s.startsWith("oferta"))return"Oferta enviada";
   if(s.startsWith("en proceso"))return"En proceso";if(s==="empezar"||s.startsWith("sin empezar")||s==="por empezar")return"Sin empezar";
   if(s.startsWith("ko")||s.startsWith("perdida"))return"Perdida / KO";if(s==="perdida / ko")return"Perdida / KO";return"Sin clasificar";}
-function normRegion(v){if(v==null)return"Sin asignar";let s=String(v).trim();const first=s.split("/")[0].trim();
-  const map={"Galicia":"Norte","Asturias":"Norte","Zaragoza":"Norte","IA contac center":"Sin asignar"};
-  const canon=["Cataluña","Norte","Levante","Centro","Sur"];if(canon.includes(first))return first;if(map[first])return map[first];
-  return canon.includes(s)?s:(s==="Otros"||s==="Sin asignar"?s:"Otros");}
+function normRegion(v){if(v==null)return"Sin asignar";let s=String(v).trim();if(!s)return"Sin asignar";
+  const first=s.split("/")[0].trim(),fk=normKey(first);
+  const canon={"cataluna":"Cataluña","norte":"Norte","levante":"Levante","centro":"Centro","sur":"Sur"};
+  const map={"galicia":"Norte","asturias":"Norte","zaragoza":"Norte","ia contac center":"Sin asignar"};
+  if(canon[fk])return canon[fk];if(map[fk])return map[fk];
+  if(fk==="otros")return"Otros";if(fk==="sin asignar")return"Sin asignar";return"Otros";}
 function normUrgencia(v){if(v==null)return"Sin definir";const s=String(v).trim().toLowerCase();
   if(s.startsWith("muy alta")||s==="alta")return"Alta";if(s.startsWith("media"))return"Media";if(s.startsWith("baj"))return"Baja";return"Sin definir";}
 function normBdm(v){if(v==null)return"Sin asignar";return String(v).split("/")[0].trim();}
