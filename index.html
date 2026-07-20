@@ -369,7 +369,7 @@
       <h3>Dónde se guardan los datos</h3>
       <ul>
         <li><b>Tú solo:</b> si no conectas carpeta, los cambios se guardan en <b>tu navegador</b> (nadie más los ve).</li>
-        <li><b>Equipo:</b> pulsando <b>«Conectar carpeta compartida»</b>, la app lee y escribe un archivo <span class="mono">pipeline.json</span> en la carpeta de SharePoint sincronizada, y todos trabajáis sobre los mismos datos.</li>
+        <li><b>Equipo:</b> pulsando <b>«Conectar carpeta compartida»</b>, la app crea una subcarpeta <span class="mono">DB_CRM</span> dentro de la carpeta que elijas y guarda ahí el <span class="mono">pipeline.json</span> compartido; todos trabajáis sobre los mismos datos.</li>
       </ul>
 
       <h3>Conectar la carpeta compartida</h3>
@@ -1042,8 +1042,8 @@ document.getElementById('importfile').addEventListener('change',async e=>{
 /* ===== Opción B: carpeta compartida (SharePoint sincronizado por OneDrive) vía File System Access API =====
    Fuente de la verdad: data/pipeline.json en una carpeta local sincronizada. Bloqueo cooperativo (pipeline.lock.json).
    Opt-in: si no conectas carpeta, la app funciona igual (solo localStorage). */
-cloud={dir:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null,conflict:[]};
-const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000;
+cloud={dir:null,parent:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null,conflict:[]};
+const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000,DB_SUBDIR="DB_CRM";
 const nowMs=()=>Date.now();
 function fsSupported(){return typeof window!=="undefined"&&"showDirectoryPicker" in window;}
 function cloudUser(){return localStorage.getItem("cloud_user")||"";}
@@ -1058,12 +1058,14 @@ async function removeFile(name){try{await cloud.dir.removeEntry(name);}catch(e){
 async function pickFolder(){if(!fsSupported()){uiNotice("Usa Chrome o Edge para esta función");return;}try{const h=await window.showDirectoryPicker({mode:"readwrite",id:"crm-data"});await connectDir(h,true);}catch(e){}}
 async function connectDir(handle,ask){
   if(handle.requestPermission){const pm=await handle.requestPermission({mode:"readwrite"});if(pm!=="granted"){uiNotice("Permiso denegado a la carpeta");return;}}
-  cloud.dir=handle;cloud.connected=true;cloud.needGesture=false;
+  cloud.parent=handle;
+  try{cloud.dir=await handle.getDirectoryHandle(DB_SUBDIR,{create:true});}catch(e){cloud.dir=handle;}   // datos en subcarpeta DB_CRM
+  cloud.connected=true;cloud.needGesture=false;
   await idbSet("dir",handle);
   if(ask)askUser();
-  await pullData(true);startPoll();renderCloudBar();uiNotice("Carpeta compartida conectada");
+  await pullData(true);startPoll();renderCloudBar();uiNotice("Carpeta compartida conectada · datos en "+DB_SUBDIR+"/");
 }
-async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.dir=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){await pullData(true);startPoll();}renderCloudBar();}catch(e){}}
+async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.parent=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){try{cloud.dir=await h.getDirectoryHandle(DB_SUBDIR,{create:true});}catch(e){cloud.dir=h;}await pullData(true);startPoll();}renderCloudBar();}catch(e){}}
 async function ensureFile(){const cur=await readJson(CLOUD_FILE);if(cur)return;cloud.version=1;await writeJson(CLOUD_FILE,{version:1,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});cloud.lastSnap=snapshot();}
 async function pullData(initial){
   if(!cloud.connected)return;
@@ -1130,7 +1132,7 @@ function renderCloudBar(){
   else if(cloud.other){h+=`<span>✏️ <span class="cb-who">${escHtml(cloud.other)}</span> está editando · solo lectura</span><span class="grow"></span><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
   else{h+='<span>Carpeta compartida · solo lectura</span><span class="grow"></span><button class="btn" id="cb-edit">✏️ Editar</button><button class="reset" id="cb-refresh">↻</button>';}
   bar.innerHTML=h;
-  if(g("cb-connect"))g("cb-connect").onclick=()=>cloud.dir?connectDir(cloud.dir,true):pickFolder();
+  if(g("cb-connect"))g("cb-connect").onclick=()=>cloud.parent?connectDir(cloud.parent,true):pickFolder();
   if(g("cb-edit"))g("cb-edit").onclick=beginEdit;
   if(g("cb-end"))g("cb-end").onclick=endEdit;
   if(g("cb-refresh"))g("cb-refresh").onclick=()=>pullData(true);
