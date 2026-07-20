@@ -208,7 +208,9 @@
   .cloudbar.ro .cb-dot{background:var(--warn)}
   .cloudbar .grow{flex:1}
   .cloudbar .cb-who{font-weight:700}
+  .cloudbar .cb-conflict{flex-basis:100%;color:var(--bad);font-weight:700;font-size:12.5px;background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);border-radius:7px;padding:5px 9px}
   .cloudbar button{padding:6px 12px;font-size:12.5px}
+  .help{max-width:820px} .help h3{font-size:15px;margin:20px 0 5px;color:var(--ink)} .help ul,.help ol{margin:4px 0;padding-left:22px} .help li{margin:4px 0;font-size:13.5px;color:var(--ink-2)} .help p{font-size:13.5px;color:var(--ink-2)}
 </style>
 
 <div class="wrap">
@@ -233,6 +235,7 @@
     <!-- <button role="tab" aria-selected="false" data-tab="reports">Reports</button> -->
     <button role="tab" aria-selected="false" data-tab="form">Nueva oportunidad</button>
     <button role="tab" aria-selected="false" data-tab="table">Registros</button>
+    <button role="tab" aria-selected="false" data-tab="help">Ayuda</button>
   </nav>
 
   <!-- DASH -->
@@ -349,6 +352,70 @@
       </table>
     </div>
     <p class="foot" id="table-count"></p>
+  </section>
+
+  <!-- AYUDA -->
+  <section class="panel" id="help">
+    <div class="card help">
+      <h2 style="margin-top:0">Ayuda — cómo usar la app</h2>
+      <p class="hint">Guía rápida del <b>Pipeline Comercial</b>. Sustituye al Excel de seguimiento; funciona en el navegador, sin instalar nada.</p>
+
+      <h3>Requisitos</h3>
+      <ul>
+        <li>Navegador <b>Google Chrome o Microsoft Edge</b> (no Firefox/Safari).</li>
+        <li>Para trabajar en equipo: la carpeta de SharePoint <b>sincronizada con OneDrive</b> en tu PC.</li>
+      </ul>
+
+      <h3>Dónde se guardan los datos</h3>
+      <ul>
+        <li><b>Tú solo:</b> si no conectas carpeta, los cambios se guardan en <b>tu navegador</b> (nadie más los ve).</li>
+        <li><b>Equipo:</b> pulsando <b>«Conectar carpeta compartida»</b>, la app lee y escribe un archivo <span class="mono">pipeline.json</span> en la carpeta de SharePoint sincronizada, y todos trabajáis sobre los mismos datos.</li>
+      </ul>
+
+      <h3>Conectar la carpeta compartida</h3>
+      <ol>
+        <li>Sincroniza la biblioteca de SharePoint con OneDrive (botón «Sincronizar»).</li>
+        <li>Pulsa <b>«Conectar carpeta compartida»</b> (barra superior) y elige esa carpeta local.</li>
+        <li>Escribe tu nombre cuando te lo pida. En sesiones nuevas puede pedir <b>«Reconectar»</b>: un clic.</li>
+      </ol>
+
+      <h3>Editar (regla de oro: un editor a la vez)</h3>
+      <ul>
+        <li>Al conectar entras en <b>solo lectura</b> (puedes mirar y filtrar todo).</li>
+        <li>Para cambiar algo: pulsa <b>«Editar»</b> → coges el turno (el resto te ve como <i>«… está editando»</i> y queda en solo lectura) → haz los cambios → pulsa <b>«Terminar edición»</b>.</li>
+        <li>Los demás reciben tus cambios al pulsar <b>↻</b>, al volver a la pestaña o cada ~15 segundos.</li>
+        <li>Coordinaos: avisad antes de tocar el pipeline para no pisaros.</li>
+      </ul>
+
+      <h3>Situaciones que la app te avisa</h3>
+      <ul>
+        <li><b>«El archivo cambió (otro guardó). Recargando…»</b> — aviso automático abajo: alguien guardó mientras editabas; la app recarga sola los datos. Vuelve a aplicar tu cambio. <b>No se pierde nada en silencio.</b></li>
+        <li><b>«⚠ Copia en conflicto en la carpeta»</b> — la barra superior te avisa si OneDrive creó una copia (p. ej. <span class="mono">pipeline-PORTATIL-JORGE.json</span>) por edición casi simultánea. <b>Qué hacer:</b> quédate con <span class="mono">pipeline.json</span> y borra la copia.</li>
+      </ul>
+
+      <h3>Pestañas</h3>
+      <ul>
+        <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
+        <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico).</li>
+        <li><b>Revisión:</b> duplicados, sin clasificar, casos a revisar y papelera de eliminadas.</li>
+        <li><b>Nueva oportunidad:</b> alta manual.</li>
+        <li><b>Registros:</b> tabla + Importar / Exportar / Normalizar.</li>
+      </ul>
+
+      <h3>Filtros</h3>
+      <p>Territorio, KAM, BDM, sector, tipología, estado, semestre (H1/H2 automático) y rango de fechas. Por defecto filtra por <b>BDM = Rubén</b>; ponlo en <b>«Todos»</b> para ver el equipo.</p>
+
+      <h3>Botones de datos (pestaña Registros)</h3>
+      <ul>
+        <li><b>Actualizar desde Excel:</b> reemplaza todo con un <span class="mono">.xlsx</span> nuevo (se normaliza solo).</li>
+        <li><b>Restaurar Excel:</b> vuelve a los datos originales.</li>
+        <li><b>Exportar CSV:</b> descarga los datos (se abre en Excel).</li>
+        <li><b>Normalizar:</b> reunifica sector y tipología.</li>
+      </ul>
+
+      <h3>Confidencial</h3>
+      <p>Contiene datos comerciales reales: <b>no lo subas a webs públicas ni lo compartas fuera del equipo</b>.</p>
+    </div>
   </section>
 
   <p class="foot">Maqueta sobre <span class="mono">Pipeline_comercial.xlsx</span> · los datos viven solo en tu navegador</p>
@@ -975,7 +1042,7 @@ document.getElementById('importfile').addEventListener('change',async e=>{
 /* ===== Opción B: carpeta compartida (SharePoint sincronizado por OneDrive) vía File System Access API =====
    Fuente de la verdad: data/pipeline.json en una carpeta local sincronizada. Bloqueo cooperativo (pipeline.lock.json).
    Opt-in: si no conectas carpeta, la app funciona igual (solo localStorage). */
-cloud={dir:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null};
+cloud={dir:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null,conflict:[]};
 const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000;
 const nowMs=()=>Date.now();
 function fsSupported(){return typeof window!=="undefined"&&"showDirectoryPicker" in window;}
@@ -1010,7 +1077,8 @@ async function pullData(initial){
   }else if(initial){await ensureFile();}
   await refreshOther();
 }
-async function refreshOther(){const lock=await readJson(LOCK_FILE);cloud.other=(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL)?lock.user:null;renderCloudBar();}
+async function scanConflicts(){const list=[];try{for await(const hh of cloud.dir.values()){if(hh.kind==="file"&&/^pipeline.*\.json$/i.test(hh.name)&&hh.name!==CLOUD_FILE&&hh.name!==LOCK_FILE)list.push(hh.name);}}catch(e){}cloud.conflict=list;}
+async function refreshOther(){const lock=await readJson(LOCK_FILE);cloud.other=(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL)?lock.user:null;await scanConflicts();renderCloudBar();}
 async function pushNow(){
   if(!cloud.connected||!cloud.editing)return;
   const cur=await readJson(CLOUD_FILE);
@@ -1051,7 +1119,11 @@ function renderCloudBar(){
   bar.style.display="flex";
   bar.className="cloudbar"+(cloud.connected&&!cloud.needGesture?(cloud.editing?" on":" ro"):"");
   const g=id=>document.getElementById(id);
-  let h='<span class="cb-dot"></span>';
+  let h='';
+  if(cloud.connected&&!cloud.needGesture&&cloud.conflict&&cloud.conflict.length){
+    h+=`<span class="cb-conflict" title="OneDrive creó una copia por edición casi simultánea">⚠ Copia en conflicto en la carpeta: <b>${escHtml(cloud.conflict[0])}</b>${cloud.conflict.length>1?" (+"+(cloud.conflict.length-1)+" más)":""} — quédate con pipeline.json y borra la copia</span>`;
+  }
+  h+='<span class="cb-dot"></span>';
   if(!cloud.connected){h+='<span>Datos solo en este navegador.</span><span class="grow"></span><button class="btn" id="cb-connect">☁ Conectar carpeta compartida</button>';}
   else if(cloud.needGesture){h+='<span>Carpeta compartida · reconecta para leer/escribir</span><span class="grow"></span><button class="btn" id="cb-connect">🔓 Reconectar</button>';}
   else if(cloud.editing){h+=`<b>Estás editando</b> <span class="cb-who">(${escHtml(cloudUser()||"tú")})</span><span class="grow"></span><button class="reset" id="cb-end">✓ Terminar edición</button>`;}
