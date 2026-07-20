@@ -209,6 +209,7 @@
   .cloudbar .grow{flex:1}
   .cloudbar .cb-who{font-weight:700}
   .cloudbar .cb-conflict{flex-basis:100%;color:var(--bad);font-weight:700;font-size:12.5px;background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);border-radius:7px;padding:5px 9px}
+  .cloudbar.min{padding:5px 12px;font-size:12px;opacity:.6;box-shadow:none;transition:opacity .2s} .cloudbar.min:hover{opacity:1} .cloudbar.min .cb-dot{background:var(--good)} .cloudbar.min button{padding:4px 10px;font-size:12px}
   .cloudbar button{padding:6px 12px;font-size:12.5px}
   .help{max-width:820px} .help h3{font-size:15px;margin:20px 0 5px;color:var(--ink)} .help ul,.help ol{margin:4px 0;padding-left:22px} .help li{margin:4px 0;font-size:13.5px;color:var(--ink-2)} .help p{font-size:13.5px;color:var(--ink-2)}
 </style>
@@ -1099,14 +1100,14 @@ async function beginEdit(){
   askUser();await pullData(true);
   cloud.editing=true;await writeLock();
   clearInterval(cloud.heartbeat);cloud.heartbeat=setInterval(writeLock,HEARTBEAT_MS);
-  renderCloudBar();uiNotice("Modo edición: eres el editor");
+  renderCloudBar();uiNotice("Editando — tus cambios se guardan en la carpeta del equipo");
 }
 async function endEdit(){
   if(!cloud.editing)return;
   clearInterval(cloud.heartbeat);cloud.heartbeat=null;
   await pushNow();
   const lock=await readJson(LOCK_FILE);if(!lock||lock.user===cloudUser())await removeFile(LOCK_FILE);
-  cloud.editing=false;renderCloudBar();uiNotice("Edición terminada y guardada");
+  cloud.editing=false;renderCloudBar();uiNotice("Guardado en la carpeta del equipo · turno liberado");
 }
 function startPoll(){clearInterval(cloud.poll);cloud.poll=setInterval(()=>{if(cloud.connected&&!cloud.needGesture&&!cloud.editing)pullData(false);},POLL_MS);}
 function cloudBlocked(){
@@ -1119,18 +1120,19 @@ function renderCloudBar(){
   const bar=document.getElementById("cloudbar");if(!bar)return;
   if(!fsSupported()){bar.style.display="none";return;}
   bar.style.display="flex";
-  bar.className="cloudbar"+(cloud.connected&&!cloud.needGesture?(cloud.editing?" on":" ro"):"");
+  const idle=cloud.connected&&!cloud.needGesture&&!cloud.editing&&!cloud.other&&!(cloud.conflict&&cloud.conflict.length);
+  bar.className="cloudbar"+(cloud.connected&&!cloud.needGesture?(cloud.editing?" on":" ro"):"")+(idle?" min":"");
   const g=id=>document.getElementById(id);
   let h='';
   if(cloud.connected&&!cloud.needGesture&&cloud.conflict&&cloud.conflict.length){
     h+=`<span class="cb-conflict" title="OneDrive creó una copia por edición casi simultánea">⚠ Copia en conflicto en la carpeta: <b>${escHtml(cloud.conflict[0])}</b>${cloud.conflict.length>1?" (+"+(cloud.conflict.length-1)+" más)":""} — quédate con pipeline.json y borra la copia</span>`;
   }
   h+='<span class="cb-dot"></span>';
-  if(!cloud.connected){h+='<span>Datos solo en este navegador.</span><span class="grow"></span><button class="btn" id="cb-connect">☁ Conectar carpeta compartida</button>';}
-  else if(cloud.needGesture){h+='<span>Carpeta compartida · reconecta para leer/escribir</span><span class="grow"></span><button class="btn" id="cb-connect">🔓 Reconectar</button>';}
-  else if(cloud.editing){h+=`<b>Estás editando</b> <span class="cb-who">(${escHtml(cloudUser()||"tú")})</span><span class="grow"></span><button class="reset" id="cb-end">✓ Terminar edición</button>`;}
-  else if(cloud.other){h+=`<span>✏️ <span class="cb-who">${escHtml(cloud.other)}</span> está editando · solo lectura</span><span class="grow"></span><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
-  else{h+='<span>Carpeta compartida · solo lectura</span><span class="grow"></span><button class="btn" id="cb-edit">✏️ Editar</button><button class="reset" id="cb-refresh">↻</button>';}
+  if(!cloud.connected){h+='<span><b>Para trabajar en equipo, conecta la carpeta compartida</b> (solo hace falta una vez).</span><span class="grow"></span><button class="btn" id="cb-connect">☁ Conectar carpeta compartida</button>';}
+  else if(cloud.needGesture){h+='<span>Reconecta la carpeta del equipo para ver/guardar cambios.</span><span class="grow"></span><button class="btn" id="cb-connect">🔓 Reconectar</button>';}
+  else if(cloud.editing){h+=`<span><b>Editando</b> · guardando en la carpeta del equipo</span><span class="grow"></span><button class="reset" id="cb-end">✓ Terminar edición</button>`;}
+  else if(cloud.other){h+=`<span>✏️ <b>${escHtml(cloud.other)}</b> está editando · tú en solo lectura</span><span class="grow"></span><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
+  else{h+='<span>Conectado a la carpeta del equipo</span><span class="grow"></span><button class="btn" id="cb-edit">✏️ Editar</button><button class="reset" id="cb-refresh" title="Traer cambios del equipo">↻</button>';}
   bar.innerHTML=h;
   if(g("cb-connect"))g("cb-connect").onclick=()=>cloud.parent?connectDir(cloud.parent,true):pickFolder();
   if(g("cb-edit"))g("cb-edit").onclick=beginEdit;
