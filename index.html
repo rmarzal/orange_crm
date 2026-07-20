@@ -1057,16 +1057,22 @@ async function readJson(name){try{const fh=await cloud.dir.getFileHandle(name);c
 async function writeJson(name,obj){const fh=await cloud.dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(JSON.stringify(obj,null,2));await w.close();}
 async function removeFile(name){try{await cloud.dir.removeEntry(name);}catch(e){}}
 async function pickFolder(){if(!fsSupported()){uiNotice("Usa Chrome o Edge para esta función");return;}try{const h=await window.showDirectoryPicker({mode:"readwrite",id:"crm-data"});await connectDir(h,true);}catch(e){}}
+/* resuelve la carpeta de datos: si ya es DB_CRM la usa; si existe la reutiliza; solo la crea si no existe (evita anidar/duplicar) */
+async function resolveDataDir(parent){
+  if(parent&&parent.name===DB_SUBDIR)return parent;
+  try{return await parent.getDirectoryHandle(DB_SUBDIR,{create:false});}catch(e){}
+  try{return await parent.getDirectoryHandle(DB_SUBDIR,{create:true});}catch(e){return parent;}
+}
 async function connectDir(handle,ask){
   if(handle.requestPermission){const pm=await handle.requestPermission({mode:"readwrite"});if(pm!=="granted"){uiNotice("Permiso denegado a la carpeta");return;}}
   cloud.parent=handle;
-  try{cloud.dir=await handle.getDirectoryHandle(DB_SUBDIR,{create:true});}catch(e){cloud.dir=handle;}   // datos en subcarpeta DB_CRM
+  cloud.dir=await resolveDataDir(handle);   // usa DB_CRM existente; no la re-crea ni la anida
   cloud.connected=true;cloud.needGesture=false;
   await idbSet("dir",handle);
   if(ask)askUser();
   await pullData(true);startPoll();renderCloudBar();uiNotice("Carpeta compartida conectada · datos en "+DB_SUBDIR+"/");
 }
-async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.parent=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){try{cloud.dir=await h.getDirectoryHandle(DB_SUBDIR,{create:true});}catch(e){cloud.dir=h;}await pullData(true);startPoll();}renderCloudBar();}catch(e){}}
+async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.parent=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){cloud.dir=await resolveDataDir(h);await pullData(true);startPoll();}renderCloudBar();}catch(e){}}
 async function ensureFile(){const cur=await readJson(CLOUD_FILE);if(cur)return;cloud.version=1;await writeJson(CLOUD_FILE,{version:1,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});cloud.lastSnap=snapshot();}
 async function pullData(initial){
   if(!cloud.connected)return;
