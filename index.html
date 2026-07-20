@@ -202,6 +202,13 @@
   .hist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:150px;overflow:auto}
   .hist li{font-size:12.5px;color:var(--ink-2);display:flex;gap:8px}
   .hist li .hd{color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cloudbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow);font-size:13px}
+  .cloudbar .cb-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:none}
+  .cloudbar.on .cb-dot{background:var(--good)}
+  .cloudbar.ro .cb-dot{background:var(--warn)}
+  .cloudbar .grow{flex:1}
+  .cloudbar .cb-who{font-weight:700}
+  .cloudbar button{padding:6px 12px;font-size:12.5px}
 </style>
 
 <div class="wrap">
@@ -212,6 +219,7 @@
     </div>
     <span class="proto-tag">Prototipo v13</span>
   </header>
+  <div id="cloudbar" class="cloudbar" style="display:none"></div>
 
   <div class="note">
     <b>Para probar en equipo.</b> Edita cualquier registro (clic en una fila o tarjeta): al cambiar el estado se guarda en el <b>histórico</b> con fecha. Todo persiste en tu navegador — usa <b>«Restaurar Excel»</b> para volver al punto de partida, <b>«Actualizar desde Excel»</b> (pestaña Registros) para recargar tu <span class="mono">.xlsx</span>, o <b>«Exportar CSV»</b>. Al arrastrar a <b>Perdida/KO</b> se pide el motivo. Vocabularios normalizados y nombres de KAM/cliente unificados.
@@ -518,13 +526,14 @@ function rowsToData(rows){const out=[];let id=1;const num=(x)=>{const n=parseFlo
       aov:num(c.B),rec:num(c.C),apertura:excelDate(c.S),cierre:excelDate(c.T),partner:clean(c.V,""),desc:clean(c.O,""),motivo_ko:"",
       history:[{d:excelDate(c.S),t:"Importado del Excel"}]});}
   return quantifyKo(standardize(out));}
+var cloud=null;   // estado de la carpeta compartida (Opción B); se inicializa más abajo
 let DATA=load();let nextId=Math.max(0,...DATA.map(d=>d.id))+1;
 function load(){try{const s=localStorage.getItem(LS_KEY);if(s)return JSON.parse(s);}catch(e){}return seed();}
 /* papelera persistente: registro de oportunidades eliminadas (sobrevive entre sesiones) */
 const LS_TRASH_KEY=LS_KEY+"_trash";
 let TRASH=loadTrash();
 function loadTrash(){try{const s=localStorage.getItem(LS_TRASH_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
-function saveTrash(){try{localStorage.setItem(LS_TRASH_KEY,JSON.stringify(TRASH));}catch(e){}}
+function saveTrash(){try{localStorage.setItem(LS_TRASH_KEY,JSON.stringify(TRASH));}catch(e){}if(typeof schedulePush==="function")schedulePush();}
 if(TRASH===null){   // primera vez: reconstruye las ya eliminadas comparando los datos actuales con el Excel original
   TRASH=[];
   try{const present=new Set(DATA.map(d=>d.id));
@@ -532,7 +541,7 @@ if(TRASH===null){   // primera vez: reconstruye las ya eliminadas comparando los
   }catch(e){}
   saveTrash();
 }
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}if(typeof schedulePush==="function")schedulePush();}
 
 /* diálogos propios (confirm/alert nativos no funcionan en el iframe del artifact) */
 function uiNotice(msg){const n=document.getElementById("notice");n.textContent=msg;n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),3000);}
@@ -733,6 +742,7 @@ function renderTrash(){
   document.querySelectorAll('#trash .btn-restore').forEach(b=>b.addEventListener('click',()=>restoreTrash(+b.dataset.i)));
 }
 function restoreTrash(i){
+  if(cloudBlocked())return;
   const d=TRASH[i];if(!d)return;
   const {deletedAt,reconstruida,...opp}=d;
   if(DATA.some(x=>x.id===opp.id))opp.id=nextId++;   // evita choque de id
@@ -794,6 +804,7 @@ function renderReport(){
 
 /* arrastrar tarjetas entre columnas -> cambia estado + histórico */
 function changeStage(id,newStage){
+  if(cloudBlocked())return;
   const d=DATA.find(x=>x.id===id);if(!d||d.estado===newStage)return;
   if(newStage==="Perdida / KO"){openKoModal(id);return;}   // pide motivo antes de marcar KO
   applyStage(d,newStage,"","tablero");
@@ -859,6 +870,7 @@ function closeModal(){document.getElementById("backdrop").classList.remove("show
 document.getElementById("m-cancel").addEventListener("click",closeModal);
 document.getElementById("backdrop").addEventListener("click",e=>{if(e.target.id==="backdrop")closeModal();});
 document.getElementById("m-save").addEventListener("click",()=>{
+  if(cloudBlocked())return;
   const d=DATA.find(x=>x.id===editId);if(!d)return;
   const nEstado=document.getElementById("m-estado").value;let nAov=Number(document.getElementById("m-aov").value)||0;
   const nReg=document.getElementById("m-region").value;
@@ -879,6 +891,7 @@ document.getElementById("m-save").addEventListener("click",()=>{
   notifySaved(d,`${d.cliente} → ${nEstado}`);
 });
 document.getElementById("m-del").addEventListener("click",async()=>{
+  if(cloudBlocked())return;
   const id=editId;
   if(!(await uiConfirm("¿Eliminar esta oportunidad? Quedará en la papelera (pestaña Revisión).","Eliminar")))return;
   const removed=DATA.find(x=>x.id===id);
@@ -907,7 +920,7 @@ function fillFormSelects(){
     sel.innerHTML=`<option value="">— elige —</option>`+opts.map(o=>`<option>${o}</option>`).join("");});
 }
 document.getElementById('oppform').addEventListener('submit',e=>{
-  e.preventDefault();const fd=Object.fromEntries(new FormData(e.target).entries());
+  e.preventDefault();if(cloudBlocked())return;const fd=Object.fromEntries(new FormData(e.target).entries());
   const rec={id:nextId++,cliente:canonCliente(clean(fd.cliente,"—")),region:normRegion(fd.region),bdm:normBdm(fd.bdm),kam:canonKam(clean(fd.kam,"—")),
     sector:canonSector(fd.sector),tipologia:canonTipologia(fd.tipologia),
     estado:normEstado(fd.estado),revisar:"",aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
@@ -919,8 +932,8 @@ document.getElementById('oppform').addEventListener('submit',e=>{
 
 /* toolbar */
 document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
-document.getElementById('normalize').addEventListener('click',()=>{recanonizar();});
-document.getElementById('restore').addEventListener('click',async()=>{if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;TRASH=[];saveTrash();buildAllFilters();render();uiNotice("Datos restaurados");});
+document.getElementById('normalize').addEventListener('click',()=>{if(cloudBlocked())return;recanonizar();});
+document.getElementById('restore').addEventListener('click',async()=>{if(cloudBlocked())return;if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;TRASH=[];saveTrash();buildAllFilters();render();uiNotice("Datos restaurados");});
 document.getElementById('export').addEventListener('click',()=>{
   const cols=["cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","cierre","partner"];
   const esc=(v)=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -938,6 +951,7 @@ document.getElementById('trash-export').addEventListener('click',()=>{
   a.href=URL.createObjectURL(blob);a.download="papelera_eliminadas.csv";a.click();
 });
 document.getElementById('trash-clear').addEventListener('click',async()=>{
+  if(cloudBlocked())return;
   if(!TRASH||!TRASH.length){uiNotice("La papelera ya está vacía");return;}
   if(!(await uiConfirm(`¿Vaciar la papelera? Se borrará el registro de ${TRASH.length} eliminada(s). No afecta a tus datos actuales.`,"Vaciar")))return;
   TRASH=[];saveTrash();renderTrash();uiNotice("Papelera vaciada");
@@ -946,6 +960,7 @@ document.getElementById('trash-clear').addEventListener('click',async()=>{
 document.getElementById('import').addEventListener('click',()=>document.getElementById('importfile').click());
 document.getElementById('importfile').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;e.target.value="";
+  if(cloudBlocked())return;
   if(typeof DecompressionStream==="undefined"){uiNotice("Tu navegador no soporta leer .xlsx aquí. Usa Chrome, Edge o Firefox actualizados.");return;}
   try{
     const rows=await readXlsx(file);const nueva=rowsToData(rows);
@@ -957,13 +972,110 @@ document.getElementById('importfile').addEventListener('change',async e=>{
   }catch(err){uiNotice("No se pudo leer el archivo: "+err.message);}
 });
 
+/* ===== Opción B: carpeta compartida (SharePoint sincronizado por OneDrive) vía File System Access API =====
+   Fuente de la verdad: data/pipeline.json en una carpeta local sincronizada. Bloqueo cooperativo (pipeline.lock.json).
+   Opt-in: si no conectas carpeta, la app funciona igual (solo localStorage). */
+cloud={dir:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null};
+const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000;
+const nowMs=()=>Date.now();
+function fsSupported(){return typeof window!=="undefined"&&"showDirectoryPicker" in window;}
+function cloudUser(){return localStorage.getItem("cloud_user")||"";}
+function askUser(){if(!cloudUser()){const n=(window.prompt("Tu nombre (para el registro de ediciones):")||"").trim();if(n)localStorage.setItem("cloud_user",n);}}
+function snapshot(){return JSON.stringify({d:DATA,t:TRASH});}
+function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open("crm_cloud",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbSet(k,v){try{const db=await idbOpen();await new Promise((res,rej)=>{const t=db.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}catch(e){}}
+async function idbGet(k){try{const db=await idbOpen();return await new Promise((res)=>{const t=db.transaction("kv","readonly");const g=t.objectStore("kv").get(k);g.onsuccess=()=>res(g.result||null);g.onerror=()=>res(null);});}catch(e){return null;}}
+async function readJson(name){try{const fh=await cloud.dir.getFileHandle(name);const f=await fh.getFile();const t=await f.text();return t?JSON.parse(t):null;}catch(e){return null;}}
+async function writeJson(name,obj){const fh=await cloud.dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(JSON.stringify(obj,null,2));await w.close();}
+async function removeFile(name){try{await cloud.dir.removeEntry(name);}catch(e){}}
+async function pickFolder(){if(!fsSupported()){uiNotice("Usa Chrome o Edge para esta función");return;}try{const h=await window.showDirectoryPicker({mode:"readwrite",id:"crm-data"});await connectDir(h,true);}catch(e){}}
+async function connectDir(handle,ask){
+  if(handle.requestPermission){const pm=await handle.requestPermission({mode:"readwrite"});if(pm!=="granted"){uiNotice("Permiso denegado a la carpeta");return;}}
+  cloud.dir=handle;cloud.connected=true;cloud.needGesture=false;
+  await idbSet("dir",handle);
+  if(ask)askUser();
+  await pullData(true);startPoll();renderCloudBar();uiNotice("Carpeta compartida conectada");
+}
+async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.dir=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){await pullData(true);startPoll();}renderCloudBar();}catch(e){}}
+async function ensureFile(){const cur=await readJson(CLOUD_FILE);if(cur)return;cloud.version=1;await writeJson(CLOUD_FILE,{version:1,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});cloud.lastSnap=snapshot();}
+async function pullData(initial){
+  if(!cloud.connected)return;
+  if(cloud.editing&&!initial)return;
+  const doc=await readJson(CLOUD_FILE);
+  if(doc&&Array.isArray(doc.data)){
+    if(!initial&&(doc.version||0)<=cloud.version){await refreshOther();return;}
+    DATA=doc.data;TRASH=Array.isArray(doc.trash)?doc.trash:TRASH;cloud.version=doc.version||0;
+    nextId=Math.max(0,...DATA.map(d=>d.id))+1;cloud.lastSnap=snapshot();
+    save();buildAllFilters();render();
+  }else if(initial){await ensureFile();}
+  await refreshOther();
+}
+async function refreshOther(){const lock=await readJson(LOCK_FILE);cloud.other=(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL)?lock.user:null;renderCloudBar();}
+async function pushNow(){
+  if(!cloud.connected||!cloud.editing)return;
+  const cur=await readJson(CLOUD_FILE);
+  if(cur&&(cur.version||0)>cloud.version){uiNotice("El archivo cambió (otro guardó). Recargando…");await pullData(true);return;}
+  cloud.version=(cloud.version||0)+1;
+  await writeJson(CLOUD_FILE,{version:cloud.version,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});
+  cloud.lastSnap=snapshot();
+}
+function schedulePush(){if(!cloud||!cloud.connected||!cloud.editing)return;if(snapshot()===cloud.lastSnap)return;clearTimeout(cloud.pushT);cloud.pushT=setTimeout(pushNow,700);}
+async function writeLock(){await writeJson(LOCK_FILE,{user:cloudUser(),ts:nowMs()});}
+async function beginEdit(){
+  if(!cloud.connected)return;
+  if(cloud.needGesture){await connectDir(cloud.dir,true);if(cloud.needGesture)return;}
+  const lock=await readJson(LOCK_FILE);
+  if(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL){uiNotice(`✏️ ${lock.user} está editando — solo lectura`);await refreshOther();return;}
+  askUser();await pullData(true);
+  cloud.editing=true;await writeLock();
+  clearInterval(cloud.heartbeat);cloud.heartbeat=setInterval(writeLock,HEARTBEAT_MS);
+  renderCloudBar();uiNotice("Modo edición: eres el editor");
+}
+async function endEdit(){
+  if(!cloud.editing)return;
+  clearInterval(cloud.heartbeat);cloud.heartbeat=null;
+  await pushNow();
+  const lock=await readJson(LOCK_FILE);if(!lock||lock.user===cloudUser())await removeFile(LOCK_FILE);
+  cloud.editing=false;renderCloudBar();uiNotice("Edición terminada y guardada");
+}
+function startPoll(){clearInterval(cloud.poll);cloud.poll=setInterval(()=>{if(cloud.connected&&!cloud.needGesture&&!cloud.editing)pullData(false);},POLL_MS);}
+function cloudBlocked(){
+  if(!cloud||!cloud.connected)return false;
+  if(cloud.editing)return false;
+  uiNotice(cloud.other?`✏️ ${cloud.other} está editando · solo lectura`:"Solo lectura · pulsa «Editar» para modificar");
+  return true;
+}
+function renderCloudBar(){
+  const bar=document.getElementById("cloudbar");if(!bar)return;
+  if(!fsSupported()){bar.style.display="none";return;}
+  bar.style.display="flex";
+  bar.className="cloudbar"+(cloud.connected&&!cloud.needGesture?(cloud.editing?" on":" ro"):"");
+  const g=id=>document.getElementById(id);
+  let h='<span class="cb-dot"></span>';
+  if(!cloud.connected){h+='<span>Datos solo en este navegador.</span><span class="grow"></span><button class="btn" id="cb-connect">☁ Conectar carpeta compartida</button>';}
+  else if(cloud.needGesture){h+='<span>Carpeta compartida · reconecta para leer/escribir</span><span class="grow"></span><button class="btn" id="cb-connect">🔓 Reconectar</button>';}
+  else if(cloud.editing){h+=`<b>Estás editando</b> <span class="cb-who">(${escHtml(cloudUser()||"tú")})</span><span class="grow"></span><button class="reset" id="cb-end">✓ Terminar edición</button>`;}
+  else if(cloud.other){h+=`<span>✏️ <span class="cb-who">${escHtml(cloud.other)}</span> está editando · solo lectura</span><span class="grow"></span><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
+  else{h+='<span>Carpeta compartida · solo lectura</span><span class="grow"></span><button class="btn" id="cb-edit">✏️ Editar</button><button class="reset" id="cb-refresh">↻</button>';}
+  bar.innerHTML=h;
+  if(g("cb-connect"))g("cb-connect").onclick=()=>cloud.dir?connectDir(cloud.dir,true):pickFolder();
+  if(g("cb-edit"))g("cb-edit").onclick=beginEdit;
+  if(g("cb-end"))g("cb-end").onclick=endEdit;
+  if(g("cb-refresh"))g("cb-refresh").onclick=()=>pullData(true);
+}
+function cloudInit(){
+  renderCloudBar();
+  if(fsSupported())tryReconnect();
+  window.addEventListener("focus",()=>{if(cloud.connected&&!cloud.needGesture&&!cloud.editing)pullData(false);});
+  window.addEventListener("beforeunload",()=>{if(cloud.editing&&cloud.dir){try{cloud.dir.removeEntry(LOCK_FILE);}catch(e){}}});
+}
 function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));buildFilters(document.getElementById('filters4'));fillFormSelects();populateRep();}
 document.getElementById('rep-bdm').addEventListener('change',e=>{repBdm=e.target.value;renderReport();});
 document.getElementById('rep-print').addEventListener('click',()=>window.print());
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters4').addEventListener('change',()=>{syncFilters();render();});
-buildAllFilters();render();
+buildAllFilters();render();cloudInit();
 </script>
 
 </html>
