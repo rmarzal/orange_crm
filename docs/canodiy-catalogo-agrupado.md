@@ -46,7 +46,7 @@ Entender esto es lo que permite agrupar "tipos de producto" en vez de listar 6.0
 |---|---|---|
 | **Grosor / calibre** | Hilos, cremalleras, cordones, agujas | Hilo: 10 · 11 · 15 · 20 · 30 · 40 · 60 · 70 · 80 · 120 — Cremallera: maya 3 · 5 · 8 |
 | **Formato / longitud** | Hilos, cintas, cordones | Bobina (2.335 refs) vs. Cono (1.518 refs); 200–5.000 m |
-| **Color** | Hilos, cremalleras, cintas, cordones, tintes | **370 códigos de color distintos** (`C/0000` … `C/3722`) |
+| **Color** | Hilos, cremalleras, cintas, cordones, tintes | **811 códigos de color distintos en hilos** (972 en todo el catálogo), en el rango `C/0000` … `C/9978` |
 
 > Un mismo "producto" (p. ej. *Hilo Gütermann Mara 70*) genera ~450 referencias sólo cruzando
 > 2 formatos × ~200 colores. Es un catálogo de **matriz**, no de surtido.
@@ -251,8 +251,9 @@ que el sitio ya modela en las categorías `PARA MARA xx` / `PARA TERA xx`.
 
 1. **Concentración extrema.** El 64 % de las referencias son hilo y el 33 % son sólo tres gamas
    (Mara, Tera, Serafil). Cualquier análisis de surtido debe tratar el hilo como un eje aparte.
-2. **370 códigos de color** conviven sin un diccionario común: el mismo `C/0000` (negro) se repite
-   en Mara, Tera y Serafil. Es la clave natural para agrupar y para recomendar equivalencias entre gamas.
+2. **811 códigos de color** conviven en hilos sin un diccionario común (972 en el catálogo completo):
+   el mismo `C/0000` (negro) se repite en Mara (452 códigos), Serafil (221), Tera (164) e Isacord (125).
+   Es la clave natural para agrupar y para recomendar equivalencias entre gamas.
 3. **Bobina vs. cono es una decisión de volumen, no de producto** (2.335 vs. 1.518 refs).
    Duplica el catálogo sin añadir variedad real — candidato claro a variante de producto.
 4. **Las categorías "PARA MARA xx" / "PARA TERA xx" ya codifican la afinidad hilo↔aguja.**
