@@ -225,7 +225,7 @@
   <div id="cloudbar" class="cloudbar" style="display:none"></div>
 
   <div class="note">
-    <b>Para probar en equipo.</b> Edita cualquier registro (clic en una fila o tarjeta): al cambiar el estado se guarda en el <b>histórico</b> con fecha. Todo persiste en tu navegador — usa <b>«Restaurar Excel»</b> para volver al punto de partida, <b>«Actualizar desde Excel»</b> (pestaña Registros) para recargar tu <span class="mono">.xlsx</span>, o <b>«Exportar CSV»</b>. Al arrastrar a <b>Perdida/KO</b> se pide el motivo. Vocabularios normalizados y nombres de KAM/cliente unificados.
+    <b>Para trabajar en equipo.</b> Edita cualquier registro (clic en una fila o tarjeta): al cambiar el estado se guarda en el <b>histórico</b> con fecha. Puedes <b>«Exportar CSV»</b> (pestaña Registros) para abrir los datos en Excel. Al arrastrar a <b>Perdida/KO</b> se pide el motivo. Consulta la pestaña <b>Ayuda</b> para la guía de uso.
   </div>
 
   <nav class="tabs" role="tablist">
@@ -336,11 +336,7 @@
     <div class="toolbar">
       <input id="search" placeholder="Buscar cliente…" style="min-width:220px">
       <div class="grow"></div>
-      <input type="file" id="importfile" accept=".xlsx" style="display:none">
-      <button class="btn" id="import" style="padding:8px 14px">⟳ Actualizar desde Excel</button>
       <button class="reset" id="export">⬇ Exportar CSV</button>
-      <button class="reset" id="normalize" title="Unifica sector y tipología (nombres equivalentes) en los datos ya cargados">🧹 Normalizar</button>
-      <button class="reset" id="restore">↺ Restaurar Excel</button>
     </div>
     <div class="filters" id="filters2"></div>
     <div class="twrap">
@@ -406,12 +402,9 @@
       <h3>Filtros</h3>
       <p>Territorio, KAM, BDM, sector, tipología, estado, semestre (H1/H2 automático) y rango de fechas. Por defecto filtra por <b>BDM = Rubén</b>; ponlo en <b>«Todos»</b> para ver el equipo.</p>
 
-      <h3>Botones de datos (pestaña Registros)</h3>
+      <h3>Datos (pestaña Registros)</h3>
       <ul>
-        <li><b>Actualizar desde Excel:</b> reemplaza todo con un <span class="mono">.xlsx</span> nuevo (se normaliza solo).</li>
-        <li><b>Restaurar Excel:</b> vuelve a los datos originales.</li>
         <li><b>Exportar CSV:</b> descarga los datos (se abre en Excel).</li>
-        <li><b>Normalizar:</b> reunifica sector y tipología.</li>
       </ul>
 
       <h3>Confidencial</h3>
@@ -937,6 +930,7 @@ function renderHist(d){
 function closeModal(){document.getElementById("backdrop").classList.remove("show");editId=null;}
 document.getElementById("m-cancel").addEventListener("click",closeModal);
 document.getElementById("backdrop").addEventListener("click",e=>{if(e.target.id==="backdrop")closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("backdrop").classList.contains("show"))closeModal();});
 document.getElementById("m-save").addEventListener("click",()=>{
   if(cloudBlocked())return;
   const d=DATA.find(x=>x.id===editId);if(!d)return;
@@ -1000,8 +994,6 @@ document.getElementById('oppform').addEventListener('submit',e=>{
 
 /* toolbar */
 document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
-document.getElementById('normalize').addEventListener('click',()=>{if(cloudBlocked())return;recanonizar();});
-document.getElementById('restore').addEventListener('click',async()=>{if(cloudBlocked())return;if(!(await uiConfirm("¿Descartar tus cambios y volver a los datos originales del Excel?","Restaurar")))return;DATA=seed();nextId=Math.max(0,...DATA.map(d=>d.id))+1;TRASH=[];saveTrash();buildAllFilters();render();uiNotice("Datos restaurados");});
 document.getElementById('export').addEventListener('click',()=>{
   const cols=["cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","cierre","partner"];
   const esc=(v)=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -1023,21 +1015,6 @@ document.getElementById('trash-clear').addEventListener('click',async()=>{
   if(!TRASH||!TRASH.length){uiNotice("La papelera ya está vacía");return;}
   if(!(await uiConfirm(`¿Vaciar la papelera? Se borrará el registro de ${TRASH.length} eliminada(s). No afecta a tus datos actuales.`,"Vaciar")))return;
   TRASH=[];saveTrash();renderTrash();uiNotice("Papelera vaciada");
-});
-/* importar / actualizar desde .xlsx */
-document.getElementById('import').addEventListener('click',()=>document.getElementById('importfile').click());
-document.getElementById('importfile').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;e.target.value="";
-  if(cloudBlocked())return;
-  if(typeof DecompressionStream==="undefined"){uiNotice("Tu navegador no soporta leer .xlsx aquí. Usa Chrome, Edge o Firefox actualizados.");return;}
-  try{
-    const rows=await readXlsx(file);const nueva=rowsToData(rows);
-    if(!nueva.length){uiNotice("No se encontraron oportunidades (columna CLIENTE vacía).");return;}
-    if(!(await uiConfirm(`Se han leído ${nueva.length} oportunidades del Excel. Esto REEMPLAZA los datos actuales (${DATA.length}). ¿Continuar?`,"Reemplazar")))return;
-    DATA=nueva;nextId=Math.max(0,...DATA.map(d=>d.id))+1;
-    buildAllFilters();render();
-    uiNotice(`✓ Datos actualizados: ${DATA.length} oportunidades importadas`);
-  }catch(err){uiNotice("No se pudo leer el archivo: "+err.message);}
 });
 
 /* ===== Opción B: carpeta compartida (SharePoint sincronizado por OneDrive) vía File System Access API =====
