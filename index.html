@@ -218,7 +218,7 @@
   <header class="top">
     <div>
       <h1>Pipeline Comercial · Funnel & Seguimiento</h1>
-      <p class="sub">Prototipo funcional · <b id="rec-count">—</b> oportunidades · tus cambios se guardan en este navegador</p>
+      <span id="rec-count" hidden></span>
     </div>
     <span class="proto-tag">Prototipo v13</span>
   </header>
@@ -440,6 +440,19 @@
     <div class="form-actions">
       <button class="btn danger" id="ko-save">Marcar como KO</button>
       <button class="btn ghost" id="ko-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONECTAR CARPETA (modal bloqueante al abrir) -->
+<div class="backdrop" id="conn-back" style="z-index:95">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:480px;text-align:center">
+    <div style="font-size:34px;line-height:1;margin-bottom:6px">☁️</div>
+    <h2 id="conn-title" style="margin:0 0 6px">Conectar carpeta compartida</h2>
+    <p class="m-sub" id="conn-msg" style="color:var(--ink-2)"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button class="btn" id="conn-go">☁ Conectar carpeta compartida</button>
+      <button class="btn ghost" id="conn-skip">Ahora no</button>
     </div>
   </div>
 </div>
@@ -1122,9 +1135,26 @@ function renderCloudBar(){
   if(g("cb-end"))g("cb-end").onclick=endEdit;
   if(g("cb-refresh"))g("cb-refresh").onclick=()=>pullData(true);
 }
-function cloudInit(){
+function showConnectModal(){
+  const back=document.getElementById("conn-back");if(!back)return;
+  const reconnect=cloud.needGesture&&cloud.parent;
+  document.getElementById("conn-title").textContent=reconnect?"Reconectar la carpeta del equipo":"Conectar la carpeta del equipo";
+  document.getElementById("conn-msg").textContent=reconnect
+    ?"Reconecta la carpeta compartida para ver y guardar los cambios del equipo. Es solo un clic."
+    :"Para trabajar en equipo y que tus cambios se guarden para todos, conecta la carpeta compartida. Solo hace falta hacerlo una vez.";
+  document.getElementById("conn-go").textContent=reconnect?"🔓 Reconectar":"☁ Conectar carpeta compartida";
+  back.classList.add("show");
+}
+function hideConnectModal(){const b=document.getElementById("conn-back");if(b)b.classList.remove("show");}
+document.getElementById("conn-go").addEventListener("click",async()=>{
+  if(cloud.parent)await connectDir(cloud.parent,true);else await pickFolder();
+  if(cloud.connected&&!cloud.needGesture)hideConnectModal();
+});
+document.getElementById("conn-skip").addEventListener("click",hideConnectModal);
+async function cloudInit(){
   renderCloudBar();
-  if(fsSupported())tryReconnect();
+  if(fsSupported())await tryReconnect();
+  if(fsSupported()&&cloud.needGesture)showConnectModal();   // modal bloqueante para reconectar (al abrir una sesión nueva)
   window.addEventListener("focus",()=>{if(cloud.connected&&!cloud.needGesture&&!cloud.editing)pullData(false);});
   window.addEventListener("beforeunload",()=>{if(cloud.editing&&cloud.dir){try{cloud.dir.removeEntry(LOCK_FILE);}catch(e){}}});
 }
