@@ -109,7 +109,7 @@
   .kcard.dragging{opacity:.4}
   .col.drop{outline:2px dashed var(--accent);outline-offset:-3px;background:color-mix(in srgb,var(--accent) 8%,var(--surface-2))}
   .col.drop .kcard{pointer-events:none}
-  .kcard .kc-cli{font-size:13px;font-weight:600;line-height:1.3}
+  .kcard .kc-cli{font-size:13px;font-weight:600;line-height:1.3;padding-right:76px}
   .kcard .kc-meta{font-size:11px;color:var(--ink-2);margin-top:3px;display:flex;justify-content:space-between;gap:6px}
   .kcard .kc-aov{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
   .kcard .kc-tipo{display:inline-block;font-size:10.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:5px;margin-top:5px}
@@ -117,8 +117,8 @@
   .kcard.is-dup{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
   .kc-rev{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle}
   .kcard{position:relative}
-  .kc-dup-btn{position:absolute;top:5px;right:5px;width:23px;height:23px;line-height:21px;text-align:center;padding:0;border:1px solid var(--border);background:var(--surface);border-radius:6px;color:var(--ink-2);font-size:13px;cursor:pointer;opacity:.55;transition:opacity .15s}
-  .kcard:hover .kc-dup-btn{opacity:.95}
+  .kc-dup-btn{position:absolute;top:5px;right:5px;padding:2px 9px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;color:var(--ink-2);font-size:10.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;transition:all .15s;line-height:1.5}
+  .kc-dup-btn:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--surface)}
   .kc-dup-btn:hover{border-color:var(--accent);color:var(--accent-ink);opacity:1}
   .kcard .kc-desc{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stripe{height:3px;border-radius:3px;margin:-9px -10px 8px;}
@@ -758,7 +758,7 @@ function renderBoard(rows){
       const n=dup[normKey(d.cliente)]||1;const isDup=d.estado!=="Perdida / KO"&&n>1;
       const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
       const revBadge=d.revisar?`<span class="kc-rev" title="Sub-estado marcado en el Excel — a revisar">⟳ ${escHtml(d.revisar)}</span>`:"";
-      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><button class="kc-dup-btn" data-dup="${d.id}" title="Duplicar oportunidad" draggable="false">⧉</button><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
+      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><button class="kc-dup-btn" data-dup="${d.id}" title="Duplicar oportunidad" draggable="false">⧉ Duplicar</button><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
