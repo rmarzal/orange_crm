@@ -117,8 +117,8 @@
   .kcard.is-dup{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
   .kc-rev{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle}
   .kcard{position:relative}
-  .kc-dup-btn{position:absolute;top:5px;right:5px;width:23px;height:23px;line-height:21px;text-align:center;padding:0;border:1px solid var(--border);background:var(--surface);border-radius:6px;color:var(--ink-2);font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s}
-  .kcard:hover .kc-dup-btn{opacity:.9}
+  .kc-dup-btn{position:absolute;top:5px;right:5px;width:23px;height:23px;line-height:21px;text-align:center;padding:0;border:1px solid var(--border);background:var(--surface);border-radius:6px;color:var(--ink-2);font-size:13px;cursor:pointer;opacity:.55;transition:opacity .15s}
+  .kcard:hover .kc-dup-btn{opacity:.95}
   .kc-dup-btn:hover{border-color:var(--accent);color:var(--accent-ink);opacity:1}
   .kcard .kc-desc{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stripe{height:3px;border-radius:3px;margin:-9px -10px 8px;}
@@ -322,6 +322,7 @@
         <label>Estado <span class="req">*</span><select name="estado" required data-fill="estado"></select></label>
         <label>Valor / AOV (€)<input name="aov" type="number" min="0" step="1" placeholder="0"></label>
         <label>Recurrente anual (€)<input name="rec" type="number" min="0" step="1" placeholder="0"></label>
+        <label>Fecha de inclusión<input name="apertura" type="date"></label>
         <label>Fecha estimada de cierre<input name="cierre" type="date"></label>
         <label>Partner<input name="partner" placeholder="Partner principal"></label>
         <label class="full">Descripción de la oportunidad<textarea name="desc" placeholder="Qué se está trabajando…"></textarea></label>
@@ -480,6 +481,7 @@
     <div class="hist"><h4>Histórico</h4><ul id="m-hist"></ul></div>
     <div class="form-actions">
       <button class="btn" id="m-save">Guardar cambios</button>
+      <button class="btn ghost" id="m-dup">⧉ Duplicar</button>
       <button class="btn ghost" id="m-cancel">Cancelar</button>
       <button class="btn danger" id="m-del" style="margin-left:auto">Eliminar</button>
     </div>
@@ -955,6 +957,7 @@ function renderHist(d){
 }
 function closeModal(){document.getElementById("backdrop").classList.remove("show");editId=null;}
 document.getElementById("m-cancel").addEventListener("click",closeModal);
+document.getElementById("m-dup").addEventListener("click",()=>{const id=editId;closeModal();duplicateOpp(id);});
 document.getElementById("backdrop").addEventListener("click",e=>{if(e.target.id==="backdrop")closeModal();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("backdrop").classList.contains("show"))closeModal();});
 document.getElementById("m-save").addEventListener("click",()=>{
@@ -1011,12 +1014,14 @@ document.getElementById('oppform').addEventListener('submit',e=>{
   e.preventDefault();if(cloudBlocked())return;const fd=Object.fromEntries(new FormData(e.target).entries());
   const rec={id:nextId++,cliente:canonCliente(clean(fd.cliente,"—")),region:normRegion(fd.region),bdm:normBdm(fd.bdm),kam:canonKam(clean(fd.kam,"—")),
     sector:canonSector(fd.sector),tipologia:canonTipologia(fd.tipologia),
-    estado:normEstado(fd.estado),revisar:"",aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
+    estado:normEstado(fd.estado),revisar:"",aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:fd.apertura||today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
     history:[{d:today(),t:"Creada"+(fd.notas?" · "+fd.notas.trim():"")}]};
-  DATA.unshift(rec);e.target.reset();
+  DATA.unshift(rec);e.target.reset();prefillFecha();
   const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
   buildAllFilters();render();
 });
+function prefillFecha(){const el=document.querySelector('#oppform [name="apertura"]');if(el)el.value=today();}
+prefillFecha();
 
 /* toolbar */
 document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
