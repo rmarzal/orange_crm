@@ -116,6 +116,10 @@
   .kcard .kc-dup{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--bad);background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle;cursor:help}
   .kcard.is-dup{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
   .kc-rev{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);padding:0 5px;border-radius:5px;margin-left:6px;vertical-align:middle}
+  .kcard{position:relative}
+  .kc-dup-btn{position:absolute;top:5px;right:5px;width:23px;height:23px;line-height:21px;text-align:center;padding:0;border:1px solid var(--border);background:var(--surface);border-radius:6px;color:var(--ink-2);font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s}
+  .kcard:hover .kc-dup-btn{opacity:.9}
+  .kc-dup-btn:hover{border-color:var(--accent);color:var(--accent-ink);opacity:1}
   .kcard .kc-desc{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .stripe{height:3px;border-radius:3px;margin:-9px -10px 8px;}
 
@@ -316,8 +320,8 @@
         <label>Sector<select name="sector" data-fill="sector"></select></label>
         <label>Tipología<select name="tipologia" data-fill="tipologia"></select></label>
         <label>Estado <span class="req">*</span><select name="estado" required data-fill="estado"></select></label>
-        <label>Valor / AOV (€)<input name="aov" type="number" min="0" step="100" placeholder="0"></label>
-        <label>Recurrente anual (€)<input name="rec" type="number" min="0" step="100" placeholder="0"></label>
+        <label>Valor / AOV (€)<input name="aov" type="number" min="0" step="1" placeholder="0"></label>
+        <label>Recurrente anual (€)<input name="rec" type="number" min="0" step="1" placeholder="0"></label>
         <label>Fecha estimada de cierre<input name="cierre" type="date"></label>
         <label>Partner<input name="partner" placeholder="Partner principal"></label>
         <label class="full">Descripción de la oportunidad<textarea name="desc" placeholder="Qué se está trabajando…"></textarea></label>
@@ -393,7 +397,7 @@
       <h3>Pestañas</h3>
       <ul>
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
-        <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico).</li>
+        <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
         <li><b>Revisión:</b> duplicados, sin clasificar, casos a revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
         <li><b>Registros:</b> tabla + Importar / Exportar / Normalizar.</li>
@@ -467,8 +471,8 @@
       <label>Estado<select id="m-estado"></select></label>
       <label>Territorio<select id="m-region"></select></label>
       <label>BDM<select id="m-bdm"></select></label>
-      <label>Valor / AOV (€)<input id="m-aov" type="number" min="0" step="100"></label>
-      <label>Fecha apertura<input id="m-apertura" type="date"></label>
+      <label>Valor / AOV (€)<input id="m-aov" type="number" min="0" step="1"></label>
+      <label>Fecha de inclusión<input id="m-apertura" type="date"></label>
       <label>Fecha cierre<input id="m-cierre" type="date"></label>
       <label class="full" id="m-motivo-wrap" style="display:none">Motivo de KO<select id="m-motivo"></select></label>
       <label class="full">Añadir nota de seguimiento<textarea id="m-nota" placeholder="Se registra con fecha en el histórico"></textarea></label>
@@ -659,12 +663,12 @@ function buildFilters(container){
   container.appendChild(sw);
   // Rango de fechas (por fecha de cierre)
   const df=document.createElement("div");df.className="f";
-  df.innerHTML=`<label>Apertura desde</label><input type="date" data-from>`;
+  df.innerHTML=`<label>Inclusión desde</label><input type="date" data-from>`;
   const di=df.querySelector("input");di.value=state.dateFrom;
   di.addEventListener("change",()=>{state.dateFrom=di.value;syncFilters();render();});
   container.appendChild(df);
   const dt=document.createElement("div");dt.className="f";
-  dt.innerHTML=`<label>Apertura hasta</label><input type="date" data-to>`;
+  dt.innerHTML=`<label>Inclusión hasta</label><input type="date" data-to>`;
   const dti=dt.querySelector("input");dti.value=state.dateTo;
   dti.addEventListener("change",()=>{state.dateTo=dti.value;syncFilters();render();});
   container.appendChild(dt);
@@ -752,11 +756,20 @@ function renderBoard(rows){
       const n=dup[normKey(d.cliente)]||1;const isDup=d.estado!=="Perdida / KO"&&n>1;
       const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
       const revBadge=d.revisar?`<span class="kc-rev" title="Sub-estado marcado en el Excel — a revisar">⟳ ${escHtml(d.revisar)}</span>`:"";
-      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
+      return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><button class="kc-dup-btn" data-dup="${d.id}" title="Duplicar oportunidad" draggable="false">⧉</button><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
   k.querySelectorAll('.kcard').forEach(c=>c.addEventListener('click',()=>{if(!dragId)openEdit(+c.dataset.id);}));
+  k.querySelectorAll('.kc-dup-btn').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();duplicateOpp(+btn.dataset.dup);}));
+}
+/* duplicar oportunidad desde el tablero: crea una copia nueva (misma info) con fecha de inclusión de hoy */
+function duplicateOpp(id){
+  if(cloudBlocked())return;
+  const d=DATA.find(x=>x.id===id);if(!d)return;
+  const copy={...d,id:nextId++,apertura:today(),cierre:"",history:[{d:today(),t:"Creada (duplicada de "+d.cliente+")"}]};
+  DATA.unshift(copy);buildAllFilters();render();
+  notifySaved(copy,`${copy.cliente} · oportunidad duplicada`);
 }
 
 /* pestaña Duplicados: agrupa por cliente las oportunidades repetidas del filtro actual */
@@ -957,7 +970,7 @@ document.getElementById("m-save").addEventListener("click",()=>{
   if(nEstado!==d.estado)d.history.push({d:today(),t:`Estado: ${d.estado} → ${nEstado}${nMotivo?` · Motivo: ${nMotivo}`:""}${priceDefault?` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`:""}`});
   else if(nMotivo&&nMotivo!==d.motivo_ko)d.history.push({d:today(),t:`Motivo KO: ${nMotivo}`});
   if(nAov!==d.aov&&!priceDefault)d.history.push({d:today(),t:`AOV: ${d.aov?eur(d.aov):"0"} → ${nAov?eur(nAov):"0"}`});
-  if(nApertura!==d.apertura)d.history.push({d:today(),t:`Fecha apertura: ${d.apertura||"—"} → ${nApertura||"—"}`});
+  if(nApertura!==d.apertura)d.history.push({d:today(),t:`Fecha de inclusión: ${d.apertura||"—"} → ${nApertura||"—"}`});
   if(nota)d.history.push({d:today(),t:"Nota: "+nota});
   d.cliente=document.getElementById("m-cliente").value.trim()||d.cliente;
   d.estado=nEstado;d.aov=nAov;d.region=nReg;d.bdm=nBdm;d.apertura=nApertura;d.cierre=nCierre;d.motivo_ko=nMotivo;
