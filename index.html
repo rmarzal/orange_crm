@@ -52,7 +52,7 @@
   .reset:hover{color:var(--ink);border-color:var(--ink-3)}
   .filters .reset{margin-left:auto;align-self:flex-end}
 
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
   @media(max-width:1040px){.kpis{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
   .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--shadow)}
@@ -91,6 +91,9 @@
   table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface)}
   th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
   th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-3);background:var(--surface-2);position:sticky;top:0}
+  th[data-sort]{cursor:pointer;user-select:none} th[data-sort]:hover{color:var(--ink)}
+  th[data-sort].sorted{color:var(--accent-ink)}
+  th[data-sort].sorted::after{content:" ▲";font-size:9px} th[data-sort].sorted[data-dir="desc"]::after{content:" ▼"}
   td.num{text-align:right;font-variant-numeric:tabular-nums}
   tbody tr{cursor:pointer}
   tbody tr:hover{background:var(--surface-2)}
@@ -190,6 +193,9 @@
   .btn-restore:hover{border-color:var(--accent);color:var(--accent-ink)}
   .rev-actions{display:flex;gap:10px;flex-wrap:wrap;margin:0 2px 12px}
   .notice{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,.32);opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;z-index:80;max-width:88vw;text-align:center}
+  .notice.show{pointer-events:auto}
+  .notice-undo{margin-left:12px;background:var(--surface);color:var(--ink);border:0;border-radius:7px;padding:4px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .notice-undo:hover{background:var(--accent);color:#fff}
   .notice.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* modal */
@@ -339,7 +345,6 @@
   <!-- TABLE -->
   <section class="panel" id="table">
     <div class="toolbar">
-      <input id="search" placeholder="Buscar cliente…" style="min-width:220px">
       <div class="grow"></div>
       <button class="reset" id="export">⬇ Exportar CSV</button>
     </div>
@@ -347,8 +352,8 @@
     <div class="twrap">
       <table>
         <thead><tr>
-          <th>Cliente</th><th>Territorio</th><th>BDM</th><th>KAM</th><th>Tipología</th>
-          <th>Estado</th><th class="num">AOV</th><th>Cierre est.</th><th>Semestre</th>
+          <th data-sort="cliente">Cliente</th><th data-sort="region">Territorio</th><th data-sort="bdm">BDM</th><th data-sort="kam">KAM</th><th data-sort="tipologia">Tipología</th>
+          <th data-sort="estado">Estado</th><th class="num" data-sort="aov">AOV</th><th data-sort="cierre">Cierre est.</th><th data-sort="semestre">Semestre</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -412,6 +417,17 @@
         <li><b>Exportar CSV:</b> descarga los datos (se abre en Excel).</li>
       </ul>
 
+      <h3>Si algo va mal</h3>
+      <ul>
+        <li>Los datos del equipo tienen <b>historial de versiones en SharePoint</b>: si el <span class="mono">pipeline.json</span> se daña o alguien borra datos por error, se recupera desde ahí (clic derecho en el archivo → <i>Historial de versiones</i>).</li>
+        <li>La app guarda además una copia <span class="mono">pipeline.backup.json</span> en <span class="mono">DB_CRM</span> con el estado anterior.</li>
+        <li>Si tu copia local se queda en mal estado, usa <b>Reiniciar datos locales</b> (abajo): borra solo lo guardado en tu navegador y recarga los datos originales.</li>
+      </ul>
+      <p style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="reset" id="help-name">👤 Cambiar mi nombre (<span id="help-name-val">—</span>)</button>
+        <button class="reset" id="help-reset">↺ Reiniciar datos locales</button>
+      </p>
+
       <h3>Confidencial</h3>
       <p>Contiene datos comerciales reales: <b>no lo subas a webs públicas ni lo compartas fuera del equipo</b>.</p>
     </div>
@@ -431,7 +447,7 @@
     </div>
   </div>
 </div>
-<div class="notice" id="notice"></div>
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
 
 <!-- KO REASON MODAL -->
 <div class="backdrop" id="ko-back">
@@ -614,9 +630,34 @@ function rowsToData(rows){const out=[];let id=1;const num=(x)=>{const n=parseFlo
   return quantifyKo(standardize(out));}
 var cloud=null;   // estado de la carpeta compartida (Opción B); se inicializa más abajo
 let DATA=load();let nextId=Math.max(0,...DATA.map(d=>d.id))+1;
-function load(){try{const s=localStorage.getItem(LS_KEY);if(s)return JSON.parse(s);}catch(e){}return seed();}
+/* saneado: acepta solo una lista de oportunidades con forma válida; descarta basura en vez de romper la app */
+function sanitizeData(raw){
+  if(!Array.isArray(raw))return null;
+  const out=raw.filter(d=>d&&typeof d==="object"&&!Array.isArray(d)).map(d=>({
+    ...d,
+    id:Number(d.id),
+    cliente:clean(d.cliente,"—"),estado:normEstado(d.estado),
+    region:normRegion(d.region),bdm:normBdm(d.bdm),kam:canonKam(clean(d.kam,"—")),
+    sector:canonSector(d.sector),tipologia:canonTipologia(d.tipologia),
+    aov:Number(d.aov)||0,rec:Number(d.rec)||0,
+    apertura:typeof d.apertura==="string"?d.apertura:"",cierre:typeof d.cierre==="string"?d.cierre:"",
+    partner:clean(d.partner,""),desc:clean(d.desc,""),motivo_ko:clean(d.motivo_ko,""),
+    revisar:clean(d.revisar,""),
+    history:Array.isArray(d.history)?d.history.filter(h=>h&&typeof h==="object"):[]
+  })).filter(d=>Number.isFinite(d.id));
+  return out.length?out:null;
+}
+function load(){
+  let stored=null;
+  try{const s=localStorage.getItem(LS_KEY);if(s)stored=JSON.parse(s);}catch(e){}
+  if(stored===null||stored===undefined)return seed();
+  const ok=sanitizeData(stored);
+  if(ok)return ok;
+  setTimeout(()=>uiNotice("Los datos guardados estaban dañados: se han cargado los datos originales"),400);
+  return seed();
+}
 /* papelera persistente: registro de oportunidades eliminadas (sobrevive entre sesiones) */
-const LS_TRASH_KEY=LS_KEY+"_trash";
+const LS_TRASH_KEY=LS_KEY+"_trash",TRASH_MAX=200;   // tope: la papelera viaja en el json compartido
 let TRASH=loadTrash();
 function loadTrash(){try{const s=localStorage.getItem(LS_TRASH_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
 function saveTrash(){try{localStorage.setItem(LS_TRASH_KEY,JSON.stringify(TRASH));}catch(e){}if(typeof schedulePush==="function")schedulePush();}
@@ -630,7 +671,10 @@ if(TRASH===null){   // primera vez: reconstruye las ya eliminadas comparando los
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}if(typeof schedulePush==="function")schedulePush();}
 
 /* diálogos propios (confirm/alert nativos no funcionan en el iframe del artifact) */
-function uiNotice(msg){const n=document.getElementById("notice");n.textContent=msg;n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),3000);}
+function uiNotice(msg,undo){const n=document.getElementById("notice");n.textContent=msg;
+  if(typeof undo==="function"){const b=document.createElement("button");b.className="notice-undo";b.textContent="Deshacer";
+    b.onclick=()=>{n.classList.remove("show");undo();};n.appendChild(b);}
+  n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),undo?7000:3000);}
 let cfRes=null;
 function uiConfirm(msg,okLabel){return new Promise(res=>{cfRes=res;document.getElementById("cf-msg").textContent=msg;document.getElementById("cf-ok").textContent=okLabel||"Aceptar";document.getElementById("cf-back").classList.add("show");});}
 function cfClose(v){document.getElementById("cf-back").classList.remove("show");if(cfRes){const r=cfRes;cfRes=null;r(v);}}
@@ -649,8 +693,11 @@ const eur=(n)=>n>=1000000?("€"+(n/1e6).toFixed(2)+"M"):n>=1000?("€"+Math.rou
 const FILTER_DEFS=[{k:"region",label:"Territorio"},{k:"bdm",label:"BDM"},{k:"kam",label:"KAM"},{k:"sector",label:"Sector"},{k:"tipologia",label:"Tipología"},{k:"estado",label:"Estado"}];
 const state={};FILTER_DEFS.forEach(f=>state[f.k]="");
 state.semestre="";state.dateFrom="";state.dateTo="";
-state.bdm="Rubén";   // filtro BDM por defecto
-let bdMode="region",funnelMode="count",searchTerm="",repBdm="Rubén";
+/* filtro BDM por defecto: el BDM del propio usuario si su nombre coincide con alguno; si no, todos */
+function myBdm(){const me=normKey(localStorage.getItem("cloud_user")||"");if(!me)return"";
+  const hit=[...new Set(DATA.map(d=>d.bdm))].find(b=>b&&normKey(b)===me||b&&me.startsWith(normKey(b)));return hit||"";}
+state.bdm=myBdm();
+let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm=state.bdm||"Rubén";
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
 function buildFilters(container){
@@ -658,14 +705,14 @@ function buildFilters(container){
   FILTER_DEFS.forEach(f=>{
     const wrap=document.createElement("div");wrap.className="f";
     const opts=(f.k==="estado")?ALL_STAGES.concat("Sin clasificar").filter(v=>DATA.some(d=>d.estado===v)):uniq(f.k);
-    wrap.innerHTML=`<label>${f.label}</label><select data-k="${f.k}"><option value="">Todos</option>${opts.map(o=>`<option>${o}</option>`).join("")}</select>`;
+    wrap.innerHTML=`<label>${f.label}</label><select data-k="${f.k}"><option value="">Todos</option>${opts.map(o=>`<option>${escHtml(o)}</option>`).join("")}</select>`;
     const sel=wrap.querySelector("select");sel.value=state[f.k];
     sel.addEventListener("change",()=>{state[f.k]=sel.value;syncFilters();render();});
     container.appendChild(wrap);
   });
   // Semestre (auto H1/H2)
   const sw=document.createElement("div");sw.className="f";
-  sw.innerHTML=`<label>Semestre</label><select data-sem><option value="">Todos</option>${semestreList().map(s=>`<option>${s}</option>`).join("")}</select>`;
+  sw.innerHTML=`<label>Semestre</label><select data-sem><option value="">Todos</option>${semestreList().map(s=>`<option>${escHtml(s)}</option>`).join("")}</select>`;
   const ss=sw.querySelector("select");ss.value=state.semestre;
   ss.addEventListener("change",()=>{state.semestre=ss.value;syncFilters();render();});
   container.appendChild(sw);
@@ -680,8 +727,15 @@ function buildFilters(container){
   const dti=dt.querySelector("input");dti.value=state.dateTo;
   dti.addEventListener("change",()=>{state.dateTo=dti.value;syncFilters();render();});
   container.appendChild(dt);
+  // Buscador de cliente (en todas las vistas)
+  const sb=document.createElement("div");sb.className="f";
+  sb.innerHTML=`<label>Buscar cliente</label><input type="search" data-search placeholder="Nombre…">`;
+  const si=sb.querySelector("input");si.value=searchRaw;
+  si.addEventListener("input",()=>{searchRaw=si.value;searchTerm=normKey(si.value);
+    document.querySelectorAll('[data-search]').forEach(x=>{if(x!==si)x.value=searchRaw;});render();});
+  container.appendChild(sb);
   const rb=document.createElement("button");rb.className="reset";rb.textContent="Limpiar filtros";
-  rb.addEventListener("click",()=>{FILTER_DEFS.forEach(f=>state[f.k]="");state.semestre="";state.dateFrom="";state.dateTo="";syncFilters();render();});
+  rb.addEventListener("click",()=>{FILTER_DEFS.forEach(f=>state[f.k]="");state.semestre="";state.dateFrom="";state.dateTo="";searchRaw="";searchTerm="";syncFilters();render();});
   container.appendChild(rb);
 }
 function syncFilters(){
@@ -689,6 +743,7 @@ function syncFilters(){
   document.querySelectorAll('[data-sem]').forEach(s=>{s.value=state.semestre;});
   document.querySelectorAll('[data-from]').forEach(s=>{s.value=state.dateFrom;});
   document.querySelectorAll('[data-to]').forEach(s=>{s.value=state.dateTo;});
+  document.querySelectorAll('[data-search]').forEach(s=>{s.value=searchRaw;});
 }
 /* aviso tras guardar un cambio; si la oportunidad queda fuera de los filtros actuales, lo indica */
 function notifySaved(d,label){
@@ -715,8 +770,7 @@ function renderKpis(rows){
   const kpis=[
     {label:"Oportunidades",val:open.length,sub:"abiertas · de "+rows.length+" en total",dot:"var(--s2)"},
     {label:"Valor pipeline (AOV)",val:eur(pipeVal),sub:open.length+" abiertas",dot:"var(--s2)"},
-    {label:"Ganadas",val:won.length,sub:eur(wonVal)+" ganado",dot:"var(--good)"},
-    {label:"Ganado",val:eur(wonVal),sub:won.length+" cerradas",dot:"var(--good)"},
+    {label:"Ganado",val:eur(wonVal),sub:won.length+(won.length===1?" ganada":" ganadas"),dot:"var(--good)"},
     {label:"Perdidas",val:lost.length,sub:eur(lostVal)+" perdido",dot:"var(--bad)"},
     {label:"Win rate",val:wr+"%",sub:won.length+"/"+decided+" decididas",dot:wr>=50?"var(--good)":"var(--warn)"}
   ];
@@ -741,17 +795,30 @@ function renderBreakdown(rows){
   const active=rows.filter(d=>STAGES.includes(d.estado)),agg={};
   active.forEach(d=>{const k=d[bdMode]||"—";agg[k]=(agg[k]||0)+1;});
   const entries=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,9);const max=Math.max(1,...entries.map(e=>e[1]));
-  document.getElementById("breakdown").innerHTML=entries.map(([k,v])=>`<div class="hbar"><span class="hlabel" title="${k}">${k}</span><div class="htrack"><div class="hfill" style="width:${v/max*100}%"></div></div><span class="hval">${v}</span></div>`).join("")||`<p class="hint">Sin datos con estos filtros.</p>`;
+  document.getElementById("breakdown").innerHTML=entries.map(([k,v])=>`<div class="hbar"><span class="hlabel" title="${escHtml(k)}">${escHtml(k)}</span><div class="htrack"><div class="hfill" style="width:${v/max*100}%"></div></div><span class="hval">${v}</span></div>`).join("")||`<p class="hint">Sin datos con estos filtros.</p>`;
   document.getElementById("bd-hint").textContent="Activas por "+({region:"territorio",bdm:"BDM",tipologia:"tipología"})[bdMode];
 }
 const STATE_PILL={"Ganada":["var(--good)","var(--good-bg)"],"Perdida / KO":["var(--bad)","var(--bad-bg)"],"Oferta enviada":["var(--accent-ink)","color-mix(in srgb,var(--accent) 14%,transparent)"],"En proceso":["var(--s1)","var(--s5)"]};
 function renderTable(rows){
-  const sorted=[...rows].sort((a,b)=>b.aov-a.aov);
+  const sorted=[...rows].sort(tableComparator);
   document.getElementById("tbody").innerHTML=sorted.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
-    return `<tr data-id="${d.id}"><td>${d.cliente}</td><td>${d.region}</td><td>${d.bdm}</td><td>${d.kam}</td><td>${d.tipologia}</td>
-      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${d.estado}</span>${d.revisar?` <span class="pill" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">⟳ ${escHtml(d.revisar)}</span>`:""}</td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
+    return `<tr data-id="${d.id}"><td>${escHtml(d.cliente)}</td><td>${escHtml(d.region)}</td><td>${escHtml(d.bdm)}</td><td>${escHtml(d.kam)}</td><td>${escHtml(d.tipologia)}</td>
+      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span>${d.revisar?` <span class="pill" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">⟳ ${escHtml(d.revisar)}</span>`:""}</td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
   document.querySelectorAll('#tbody tr').forEach(tr=>tr.addEventListener('click',()=>openEdit(+tr.dataset.id)));
   document.getElementById("table-count").textContent=rows.length+" registros";
+  document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{
+    const k=th.dataset.sort;
+    th.classList.toggle('sorted',sortKey===k);
+    th.dataset.dir=sortKey===k?(sortAsc?'asc':'desc'):'';
+  });
+}
+/* ordenación de la tabla por columna */
+let sortKey="aov",sortAsc=false;
+function sortVal(d,k){if(k==="semestre")return semestreOf(d)||"";if(k==="aov")return d.aov||0;return (d[k]==null?"":String(d[k]));}
+function tableComparator(a,b){
+  const va=sortVal(a,sortKey),vb=sortVal(b,sortKey);
+  let c=(typeof va==="number"&&typeof vb==="number")?va-vb:normKey(va).localeCompare(normKey(vb),"es");
+  return sortAsc?c:-c;
 }
 function renderBoard(rows){
   const dup=dupCounts();
@@ -792,7 +859,7 @@ function renderDups(rows){
   document.getElementById("duplist").innerHTML=dupGroups.map(g=>{
     const total=g.reduce((s,d)=>s+d.aov,0);
     const items=g.sort((a,b)=>b.aov-a.aov).map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
-      return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${d.estado}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
+      return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">${escHtml(d.tipologia)}</span><span class="di-meta">${escHtml(d.bdm)} · ${escHtml(d.region)}${d.apertura?" · "+escHtml(d.apertura):""}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
     return `<div class="dup-group warn"><div class="dup-head"><span class="dup-name">${escHtml(g[0].cliente)}<span class="kc-dup">⚠ ×${g.length}</span></span><span class="dup-count">${g.length} oportunidades · ${eur(total)}</span></div><div class="dup-items">${items}</div></div>`;
   }).join("");
   document.querySelectorAll('#duplist .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
@@ -848,7 +915,7 @@ function restoreTrash(i){
 function repDesc(d){const t=d.desc?(d.desc.length>220?d.desc.slice(0,220)+"…":d.desc):"";return t?escHtml(t):'<span style="color:var(--ink-3)">Sin descripción registrada</span>';}
 function repOpp(d){return `<div class="rep-opp"><div class="ro-head"><span class="ro-cli">${escHtml(d.cliente)}</span><span class="ro-val">${d.aov?eur(d.aov):"—"}</span></div><div class="ro-meta">${escHtml(d.tipologia)} · ${escHtml(d.estado)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}${d.motivo_ko?" · Motivo KO: "+escHtml(d.motivo_ko):""}</div><div class="ro-desc">${repDesc(d)}</div></div>`;}
 function repSection(title,list,emptyMsg){return `<div class="rep-section"><h3>${title}</h3>${list.length?list.map(repOpp).join(""):`<div class="rep-empty">${emptyMsg}</div>`}</div>`;}
-function populateRep(){const sel=document.getElementById("rep-bdm");if(!sel)return;const opts=uniq("bdm");if(!opts.includes(repBdm))repBdm=opts.includes("Rubén")?"Rubén":(opts[0]||"");sel.innerHTML=opts.map(o=>`<option${o===repBdm?" selected":""}>${o}</option>`).join("");}
+function populateRep(){const sel=document.getElementById("rep-bdm");if(!sel)return;const opts=uniq("bdm");if(!opts.includes(repBdm))repBdm=opts.includes("Rubén")?"Rubén":(opts[0]||"");sel.innerHTML=opts.map(o=>`<option${o===repBdm?" selected":""}>${escHtml(o)}</option>`).join("");}
 function renderReport(){
   const host=document.getElementById("report");if(!host)return;
   const bdm=repBdm;const rows=DATA.filter(d=>d.bdm===bdm);
@@ -906,12 +973,16 @@ function changeStage(id,newStage){
 }
 function applyStage(d,newStage,motivo,via){
   d.history=d.history||[];
+  const prev={estado:d.estado,aov:d.aov,motivo_ko:d.motivo_ko,revisar:d.revisar,histLen:d.history.length};
   let extra="";
   if(newStage==="Perdida / KO"&&!d.aov){d.aov=KO_DEFAULT_AOV;extra=` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`;}
   d.history.push({d:today(),t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
   d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";else d.revisar="";
   buildAllFilters();render();
-  notifySaved(d,`${d.cliente} → ${newStage}`);
+  const undo=()=>{d.estado=prev.estado;d.aov=prev.aov;d.motivo_ko=prev.motivo_ko;d.revisar=prev.revisar;
+    d.history.length=prev.histLen;buildAllFilters();render();uiNotice(`Cambio deshecho · ${d.cliente} vuelve a «${prev.estado}»`);};
+  const hidden=!filtered().some(x=>x.id===d.id);
+  uiNotice(`${d.cliente} → ${newStage}`+(hidden?" · guardado, pero oculto por los filtros":" · guardado"),undo);
 }
 /* modal motivo KO */
 let koId=null;
@@ -938,7 +1009,7 @@ kbEl.addEventListener("drop",e=>{const col=e.target.closest(".col");if(!col||dra
 
 /* ---- edit modal ---- */
 let editId=null;
-function fillSel(el,opts,val){el.innerHTML=opts.map(o=>`<option${o===val?" selected":""}>${o}</option>`).join("");}
+function fillSel(el,opts,val){el.innerHTML=opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("");}
 function openEdit(id){
   const d=DATA.find(x=>x.id===id);if(!d)return;editId=id;
   document.getElementById("m-title").textContent=d.cliente;
@@ -961,11 +1032,12 @@ function openEdit(id){
   toggleMotivo(d.estado);
   renderHist(d);
   document.getElementById("backdrop").classList.add("show");
+  setTimeout(()=>{const f=document.getElementById("m-cliente");if(f)f.focus();},30);
 }
 function toggleMotivo(estado){document.getElementById("m-motivo-wrap").style.display=(estado==="Perdida / KO")?"flex":"none";}
 document.getElementById("m-estado").addEventListener("change",e=>toggleMotivo(e.target.value));
 function renderHist(d){
-  document.getElementById("m-hist").innerHTML=(d.history||[]).slice().reverse().map(h=>`<li><span class="hd">${h.d||"—"}</span><span>${h.t}</span></li>`).join("")||'<li>Sin histórico</li>';
+  document.getElementById("m-hist").innerHTML=(d.history||[]).slice().reverse().map(h=>`<li><span class="hd">${escHtml(h.d||"—")}</span><span>${escHtml(h.t||"")}</span></li>`).join("")||'<li>Sin histórico</li>';
 }
 function closeModal(){document.getElementById("backdrop").classList.remove("show");editId=null;}
 document.getElementById("m-cancel").addEventListener("click",closeModal);
@@ -1005,18 +1077,29 @@ document.getElementById("m-del").addEventListener("click",async()=>{
   if(!(await uiConfirm("¿Eliminar esta oportunidad? Quedará en la papelera (pestaña Revisión).","Eliminar")))return;
   const removed=DATA.find(x=>x.id===id);
   DATA=DATA.filter(x=>x.id!==id);
-  if(removed){TRASH.unshift({...removed,deletedAt:today()});saveTrash();}
+  if(removed){TRASH.unshift({...removed,deletedAt:today()});if(TRASH.length>TRASH_MAX)TRASH.length=TRASH_MAX;saveTrash();}
   closeModal();buildAllFilters();render();
   uiNotice("Oportunidad eliminada · guardada en Revisión › Papelera");
 });
 
 /* tabs */
-document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected','false'));
-  b.setAttribute('aria-selected','true');
+function activateTab(b){
+  document.querySelectorAll('nav.tabs button').forEach(x=>{x.setAttribute('aria-selected','false');x.tabIndex=-1;});
+  b.setAttribute('aria-selected','true');b.tabIndex=0;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById(b.dataset.tab).classList.add('active');
-}));
+}
+document.querySelectorAll('nav.tabs button').forEach((b,i,all)=>{
+  b.tabIndex=b.getAttribute('aria-selected')==='true'?0:-1;
+  b.addEventListener('click',()=>activateTab(b));
+  b.addEventListener('keydown',e=>{   // navegación con flechas / Inicio / Fin
+    const k=e.key;let t=null;
+    if(k==='ArrowRight')t=all[(i+1)%all.length];
+    else if(k==='ArrowLeft')t=all[(i-1+all.length)%all.length];
+    else if(k==='Home')t=all[0]; else if(k==='End')t=all[all.length-1];
+    if(t){e.preventDefault();activateTab(t);t.focus();}
+  });
+});
 document.getElementById('bd-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   bdMode=b.dataset.bd;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');renderBreakdown(filtered());});
 document.getElementById('funnel-mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
@@ -1026,7 +1109,7 @@ document.getElementById('funnel-mode').addEventListener('click',e=>{const b=e.ta
 function fillFormSelects(){
   document.querySelectorAll('select[data-fill]').forEach(sel=>{const k=sel.dataset.fill;let opts;
     if(k==="estado")opts=ALL_STAGES;else if(k==="region")opts=REGIONS;else opts=uniq(k);
-    sel.innerHTML=`<option value="">— elige —</option>`+opts.map(o=>`<option>${o}</option>`).join("");});
+    sel.innerHTML=`<option value="">— elige —</option>`+opts.map(o=>`<option>${escHtml(o)}</option>`).join("");});
 }
 document.getElementById('oppform').addEventListener('submit',e=>{
   e.preventDefault();if(cloudBlocked())return;const fd=Object.fromEntries(new FormData(e.target).entries());
@@ -1042,7 +1125,26 @@ function prefillFecha(){const el=document.querySelector('#oppform [name="apertur
 prefillFecha();
 
 /* toolbar */
-document.getElementById('search').addEventListener('input',e=>{searchTerm=normKey(e.target.value);render();});
+/* ordenar la tabla al pulsar una cabecera */
+document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{
+  th.addEventListener('click',()=>{const k=th.dataset.sort;
+    if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k!=="aov");}
+    renderTable(filtered());});
+});
+/* nombre del usuario: visible y editable desde Ayuda */
+function refreshNameLabel(){const el=document.getElementById('help-name-val');if(el)el.textContent=(localStorage.getItem('cloud_user')||'sin definir');}
+document.getElementById('help-name').addEventListener('click',()=>{
+  const cur=localStorage.getItem('cloud_user')||'';
+  const n=(window.prompt("Tu nombre (se usa para el registro de ediciones y el turno de edición):",cur)||"").trim();
+  if(n){localStorage.setItem('cloud_user',n);refreshNameLabel();uiNotice("Nombre actualizado: "+n);}
+});
+refreshNameLabel();
+/* salida de emergencia: limpia solo el almacenamiento local y recarga los datos originales */
+document.getElementById('help-reset').addEventListener('click',async()=>{
+  if(!(await uiConfirm("¿Reiniciar los datos guardados en ESTE navegador y volver a los datos originales? No afecta al archivo del equipo.","Reiniciar")))return;
+  try{localStorage.removeItem(LS_KEY);localStorage.removeItem(LS_TRASH_KEY);}catch(e){}
+  location.reload();
+});
 document.getElementById('export').addEventListener('click',()=>{
   const cols=["cliente","region","bdm","kam","sector","tipologia","estado","motivo_ko","aov","rec","cierre","partner"];
   const esc=(v)=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -1070,7 +1172,7 @@ document.getElementById('trash-clear').addEventListener('click',async()=>{
    Fuente de la verdad: data/pipeline.json en una carpeta local sincronizada. Bloqueo cooperativo (pipeline.lock.json).
    Opt-in: si no conectas carpeta, la app funciona igual (solo localStorage). */
 cloud={dir:null,parent:null,connected:false,editing:false,needGesture:false,version:0,lastSnap:"",other:null,heartbeat:null,poll:null,pushT:null,conflict:[]};
-const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000,DB_SUBDIR="DB_CRM";
+const CLOUD_FILE="pipeline.json",LOCK_FILE="pipeline.lock.json",BACKUP_FILE="pipeline.backup.json",LOCK_TTL=90000,HEARTBEAT_MS=20000,POLL_MS=15000,DB_SUBDIR="DB_CRM",LOCK_NAG_MS=1800000;
 const nowMs=()=>Date.now();
 function fsSupported(){return typeof window!=="undefined"&&"showDirectoryPicker" in window;}
 function cloudUser(){return localStorage.getItem("cloud_user")||"";}
@@ -1104,20 +1206,26 @@ async function pullData(initial){
   if(!cloud.connected)return;
   if(cloud.editing&&!initial)return;
   const doc=await readJson(CLOUD_FILE);
-  if(doc&&Array.isArray(doc.data)){
+  const clean_=doc&&Array.isArray(doc.data)?sanitizeData(doc.data):null;
+  if(doc&&Array.isArray(doc.data)&&!clean_){   // archivo compartido dañado: no lo cargamos ni lo sobrescribimos
+    uiNotice("⚠ El archivo del equipo está dañado. Recupéralo desde el historial de versiones de SharePoint.");
+    await refreshOther();return;
+  }
+  if(clean_){
     if(!initial&&(doc.version||0)<=cloud.version){await refreshOther();return;}
-    DATA=doc.data;TRASH=Array.isArray(doc.trash)?doc.trash:TRASH;cloud.version=doc.version||0;
+    DATA=clean_;TRASH=Array.isArray(doc.trash)?doc.trash.filter(t=>t&&typeof t==="object"):TRASH;cloud.version=doc.version||0;
     nextId=Math.max(0,...DATA.map(d=>d.id))+1;cloud.lastSnap=snapshot();
     save();buildAllFilters();render();
   }else if(initial){await ensureFile();}
   await refreshOther();
 }
-async function scanConflicts(){const list=[];try{for await(const hh of cloud.dir.values()){if(hh.kind==="file"&&/^pipeline.*\.json$/i.test(hh.name)&&hh.name!==CLOUD_FILE&&hh.name!==LOCK_FILE)list.push(hh.name);}}catch(e){}cloud.conflict=list;}
+async function scanConflicts(){const list=[];try{for await(const hh of cloud.dir.values()){if(hh.kind==="file"&&/^pipeline.*\.json$/i.test(hh.name)&&hh.name!==CLOUD_FILE&&hh.name!==LOCK_FILE&&hh.name!==BACKUP_FILE)list.push(hh.name);}}catch(e){}cloud.conflict=list;}
 async function refreshOther(){const lock=await readJson(LOCK_FILE);cloud.other=(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL)?lock.user:null;await scanConflicts();renderCloudBar();}
 async function pushNow(){
   if(!cloud.connected||!cloud.editing)return;
   const cur=await readJson(CLOUD_FILE);
   if(cur&&(cur.version||0)>cloud.version){uiNotice("El archivo cambió (otro guardó). Recargando…");await pullData(true);return;}
+  if(cur&&Array.isArray(cur.data))try{await writeJson(BACKUP_FILE,cur);}catch(e){}   // copia del estado anterior
   cloud.version=(cloud.version||0)+1;
   await writeJson(CLOUD_FILE,{version:cloud.version,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});
   cloud.lastSnap=snapshot();
@@ -1130,8 +1238,11 @@ async function beginEdit(){
   const lock=await readJson(LOCK_FILE);
   if(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL){uiNotice(`✏️ ${lock.user} está editando — solo lectura`);await refreshOther();return;}
   askUser();await pullData(true);
-  cloud.editing=true;await writeLock();
-  clearInterval(cloud.heartbeat);cloud.heartbeat=setInterval(writeLock,HEARTBEAT_MS);
+  cloud.editing=true;cloud.editSince=nowMs();await writeLock();
+  clearInterval(cloud.heartbeat);cloud.heartbeat=setInterval(()=>{writeLock();
+    if(cloud.editSince&&nowMs()-cloud.editSince>LOCK_NAG_MS){cloud.editSince=nowMs();   // recordatorio cada 30 min
+      uiNotice("Llevas mucho tiempo con el turno de edición abierto · pulsa «Terminar edición» para liberarlo");}
+  },HEARTBEAT_MS);
   renderCloudBar();uiNotice("Editando — tus cambios se guardan en la carpeta del equipo");
 }
 async function endEdit(){
@@ -1163,13 +1274,17 @@ function renderCloudBar(){
   if(!cloud.connected){h+='<span><b>Para trabajar en equipo, conecta la carpeta compartida</b> (solo hace falta una vez).</span><span class="grow"></span><button class="btn" id="cb-connect">☁ Conectar carpeta compartida</button>';}
   else if(cloud.needGesture){h+='<span>Reconecta la carpeta del equipo para ver/guardar cambios.</span><span class="grow"></span><button class="btn" id="cb-connect">🔓 Reconectar</button>';}
   else if(cloud.editing){h+=`<span><b>Editando</b> · guardando en la carpeta del equipo</span><span class="grow"></span><button class="reset" id="cb-end">✓ Terminar edición</button>`;}
-  else if(cloud.other){h+=`<span>✏️ <b>${escHtml(cloud.other)}</b> está editando · tú en solo lectura</span><span class="grow"></span><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
+  else if(cloud.other){h+=`<span>✏️ <b>${escHtml(cloud.other)}</b> está editando · tú en solo lectura</span><span class="grow"></span><button class="reset" id="cb-force" title="Usar solo si sabes que ya no está editando">Liberar turno</button><button class="reset" id="cb-refresh">↻ Actualizar</button>`;}
   else{h+='<span>Conectado a la carpeta del equipo</span><span class="grow"></span><button class="btn" id="cb-edit">✏️ Editar</button><button class="reset" id="cb-refresh" title="Traer cambios del equipo">↻</button>';}
   bar.innerHTML=h;
   if(g("cb-connect"))g("cb-connect").onclick=()=>cloud.parent?connectDir(cloud.parent,true):pickFolder();
   if(g("cb-edit"))g("cb-edit").onclick=beginEdit;
   if(g("cb-end"))g("cb-end").onclick=endEdit;
   if(g("cb-refresh"))g("cb-refresh").onclick=()=>pullData(true);
+  if(g("cb-force"))g("cb-force").onclick=async()=>{
+    if(!(await uiConfirm(`¿Liberar el turno de ${cloud.other}? Hazlo solo si ya no está editando: si sigue, podría perder los cambios que no haya guardado.`,"Liberar")))return;
+    await removeFile(LOCK_FILE);await refreshOther();uiNotice("Turno liberado · ya puedes pulsar «Editar»");
+  };
 }
 function showConnectModal(){
   const back=document.getElementById("conn-back");if(!back)return;
