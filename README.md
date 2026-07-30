@@ -1,38 +1,68 @@
 # Orange CRM · Pipeline Comercial
 
-Prototipo funcional para el seguimiento del pipeline comercial: sustituye el Excel
-por un formulario de entrada controlado, un embudo de conversión y un tablero
-Kanban, con filtros y visualización.
+Aplicación de seguimiento del pipeline comercial que sustituye el Excel del
+equipo: dashboard con KPIs, embudo de conversión, tablero Kanban, control de
+duplicados y limpieza de datos.
 
-## Uso
+Es un **único archivo HTML autocontenido** (sin servidor, sin instalación, sin
+dependencias externas): la lógica y el diseño viajan dentro del propio
+fichero. **Este repositorio no contiene datos comerciales** — se distribuye
+sin oportunidades cargadas (`RAW = []`) para poder mantenerlo en un repo
+público; los datos reales se cargan aparte, en local, y nunca se suben aquí.
 
-Abre `index.html` en el navegador (Chrome, Edge o Firefox actualizados). Es una
-página **autocontenida** (sin dependencias externas): los datos y toda la lógica
-viajan dentro del propio HTML. Los cambios se guardan en el navegador
-(`localStorage`).
+## Cómo se usa
 
-También se puede publicar con **GitHub Pages** (Settings → Pages → Deploy from
-branch → `main` / root) y acceder desde la URL que genere.
+1. Abre el HTML en **Google Chrome o Microsoft Edge** (no Firefox/Safari:
+   usa la *File System Access API*).
+2. Carga tus oportunidades con **«Actualizar desde Excel»** (pestaña
+   Registros), o parte de una copia ya poblada.
+3. (Opcional, trabajo en equipo) Pulsa **«Conectar carpeta compartida»** y
+   elige una carpeta de SharePoint sincronizada con OneDrive. La app crea
+   una subcarpeta `DB_CRM/` con `pipeline.json` y todo el equipo trabaja
+   sobre los mismos datos, con bloqueo cooperativo (un editor a la vez) y
+   detección de conflictos.
+
+Sin conectar carpeta, cada cambio se guarda solo en el navegador de esa
+persona (`localStorage`). No se publica con GitHub Pages ni ninguna URL
+pública: es un fichero que se reparte y se abre en local.
 
 ## Funcionalidades
 
-- **Formulario de alta** con desplegables controlados (evita el desorden de valores libres).
-- **Embudo de conversión** por nº de oportunidades o por valor (€).
-- **Tablero Kanban** con arrastrar y soltar entre etapas (cambia el estado y lo registra en el histórico).
-- **Filtros** por territorio, KAM, BDM, sector, tipología, estado, **semestre (H1/H2 automático)** y **rango de fechas de apertura**.
-- **Ficha de edición** con histórico de cambios por oportunidad.
-- **Importar Excel** (`.xlsx`) para actualizar los datos — reemplaza los registros anteriores.
-- **Exportar CSV**.
+- **Embudo & Dashboard**: KPIs (abiertas, valor de pipeline, ganadas,
+  perdidas, win rate) y embudo de conversión por nº o por €.
+- **Tablero Kanban**: arrastrar y soltar entre etapas (queda en el
+  histórico) y botón para duplicar una oportunidad.
+- **Revisión**: clientes duplicados, oportunidades sin clasificar, casos
+  marcados para revisar y papelera de eliminadas (recuperable).
+- **Ficha de oportunidad**: edición completa de todos los campos, con
+  histórico de cambios.
+- **Registros**: tabla ordenable por columna, con buscador y exportación a
+  CSV.
+- **Ayuda**: guía de uso integrada en la propia app.
 
-## Reglas de negocio incluidas
+## Reglas de negocio
 
-- **Normalización de caracteres**: acentos, mayúsculas y espacios no diferencian valores (`Rubén` = `Ruben` = `RUBEN` → forma única).
-- **Semestre automático** derivado de la fecha de apertura (ene–jun → H1, jul–dic → H2).
-- **Precio por defecto**: toda oportunidad en *Perdida / KO* sin importe recibe **40.000 €** automáticamente.
-- **Motivo de KO** obligatorio al mover una oportunidad a la columna de perdidas.
+- Normalización de caracteres: acentos, mayúsculas y espacios no
+  diferencian valores (`Rubén` = `Ruben` = `RUBEN`).
+- Canonicalización de sector, tipología, KAM y cliente (variantes
+  equivalentes se unifican).
+- Semestre automático derivado de la fecha de apertura.
+- Precio por defecto de 40.000 € para oportunidades *Perdida / KO* sin
+  importe; motivo de KO obligatorio.
+- Sub-estados como *Revisar caso* o *Stand by* se guardan como etiqueta
+  aparte, no alteran el estado principal.
+
+## Seguridad y robustez
+
+- Todo el texto proveniente de datos se escapa antes de mostrarse
+  (protección frente a inyección de HTML/script).
+- Los datos se validan al cargar; un archivo dañado no rompe la
+  aplicación y no se sobrescribe el archivo compartido.
+- Copia de seguridad automática (`pipeline.backup.json`) en cada guardado
+  a la carpeta compartida.
 
 ## Estado
 
-Prototipo para validación con el equipo comercial. El siguiente paso es la
-aplicación a medida con backend y base de datos compartida (los datos aquí viven
-solo en el navegador de cada usuario).
+Prototipo en uso por el equipo comercial. El siguiente paso, cuando haga
+falta edición simultánea real y control de accesos, es una aplicación a
+medida con backend (NestJS + PostgreSQL) — proyecto independiente.
