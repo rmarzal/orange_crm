@@ -469,13 +469,19 @@
     <p class="m-sub" id="m-sub"></p>
     <div class="m-grid">
       <label class="full">Cliente<input id="m-cliente"></label>
+      <label>KAM<input id="m-kam"></label>
       <label>Estado<select id="m-estado"></select></label>
       <label>Territorio<select id="m-region"></select></label>
       <label>BDM<select id="m-bdm"></select></label>
+      <label>Sector<select id="m-sector"></select></label>
+      <label>Tipología<select id="m-tipologia"></select></label>
       <label>Valor / AOV (€)<input id="m-aov" type="number" min="0" step="1"></label>
+      <label>Recurrente anual (€)<input id="m-rec" type="number" min="0" step="1"></label>
       <label>Fecha de inclusión<input id="m-apertura" type="date"></label>
       <label>Fecha cierre<input id="m-cierre" type="date"></label>
+      <label>Partner<input id="m-partner"></label>
       <label class="full" id="m-motivo-wrap" style="display:none">Motivo de KO<select id="m-motivo"></select></label>
+      <label class="full">Descripción<textarea id="m-desc" placeholder="Descripción de la oportunidad"></textarea></label>
       <label class="full">Añadir nota de seguimiento<textarea id="m-nota" placeholder="Se registra con fecha en el histórico"></textarea></label>
     </div>
     <div class="hist"><h4>Histórico</h4><ul id="m-hist"></ul></div>
@@ -938,12 +944,18 @@ function openEdit(id){
   document.getElementById("m-title").textContent=d.cliente;
   document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`+(d.revisar?` · ⟳ ${d.revisar}`:"");
   document.getElementById("m-cliente").value=d.cliente;
+  document.getElementById("m-kam").value=(d.kam&&d.kam!=="—")?d.kam:"";
   fillSel(document.getElementById("m-estado"),ALL_STAGES.includes(d.estado)?ALL_STAGES:[d.estado,...ALL_STAGES],d.estado);
   fillSel(document.getElementById("m-region"),REGIONS,d.region);
   fillSel(document.getElementById("m-bdm"),uniq("bdm"),d.bdm);
+  fillSel(document.getElementById("m-sector"),[...new Set([d.sector,...uniq("sector")].filter(Boolean))],d.sector);
+  fillSel(document.getElementById("m-tipologia"),[...new Set([d.tipologia,...uniq("tipologia")].filter(Boolean))],d.tipologia);
   document.getElementById("m-aov").value=d.aov||"";
+  document.getElementById("m-rec").value=d.rec||"";
   document.getElementById("m-apertura").value=d.apertura||"";
   document.getElementById("m-cierre").value=d.cierre||"";
+  document.getElementById("m-partner").value=d.partner||"";
+  document.getElementById("m-desc").value=d.desc||"";
   document.getElementById("m-nota").value="";
   fillSel(document.getElementById("m-motivo"),MOTIVOS_KO,d.motivo_ko&&MOTIVOS_KO.includes(d.motivo_ko)?d.motivo_ko:MOTIVOS_KO[0]);
   toggleMotivo(d.estado);
@@ -975,7 +987,13 @@ document.getElementById("m-save").addEventListener("click",()=>{
   if(nAov!==d.aov&&!priceDefault)d.history.push({d:today(),t:`AOV: ${d.aov?eur(d.aov):"0"} → ${nAov?eur(nAov):"0"}`});
   if(nApertura!==d.apertura)d.history.push({d:today(),t:`Fecha de inclusión: ${d.apertura||"—"} → ${nApertura||"—"}`});
   if(nota)d.history.push({d:today(),t:"Nota: "+nota});
-  d.cliente=document.getElementById("m-cliente").value.trim()||d.cliente;
+  d.cliente=canonCliente(document.getElementById("m-cliente").value.trim()||d.cliente);
+  d.kam=canonKam(document.getElementById("m-kam").value.trim()||"—");
+  d.sector=canonSector(document.getElementById("m-sector").value);
+  d.tipologia=canonTipologia(document.getElementById("m-tipologia").value);
+  d.rec=Number(document.getElementById("m-rec").value)||0;
+  d.partner=document.getElementById("m-partner").value.trim();
+  d.desc=document.getElementById("m-desc").value.trim();
   d.estado=nEstado;d.aov=nAov;d.region=nReg;d.bdm=nBdm;d.apertura=nApertura;d.cierre=nCierre;d.motivo_ko=nMotivo;
   if(nEstado!=="Perdida / KO")d.revisar="";
   closeModal();buildAllFilters();render();
