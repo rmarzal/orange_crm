@@ -130,6 +130,8 @@
   @media(max-width:760px){form.grid{grid-template-columns:1fr}}
   form.grid .full{grid-column:1/-1}
   form.grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--ink-2)}
+  label.chk{flex-direction:row!important;align-items:center;gap:8px;align-self:end;padding-bottom:9px}
+  label.chk input{width:auto!important;min-width:0;accent-color:var(--accent)}
   form.grid input,form.grid select,form.grid textarea{min-width:0;width:100%}
   form.grid textarea{resize:vertical;min-height:64px}
   .req{color:var(--accent-ink)}
@@ -294,7 +296,7 @@
     <div class="dup-summary" id="uncls-summary"></div>
     <div id="uncls"></div>
     <h2 class="rev-h" style="margin-top:26px">Casos a revisar</h2>
-    <p class="hint" style="margin:-6px 2px 12px">Oportunidades con un sub-estado del Excel (<b>KO - REVISAR CASO</b> / <b>STAND BY</b>). El estado se normaliza a <i>Perdida / KO</i>, pero se conserva esta <b>etiqueta aparte</b> para que las repases. Clic para editar.</p>
+    <p class="hint" style="margin:-6px 2px 12px">Oportunidades <b>marcadas con 🚩 para revisar</b>, con su motivo (por ejemplo, <i>Atribución por defecto</i>). Se marcan desde el formulario o la ficha de la oportunidad; también llegan así las importadas del Excel con <i>REVISAR CASO</i> o <i>STAND BY</i>. Clic para editar.</p>
     <div class="dup-summary" id="revisar-summary"></div>
     <div id="revisar"></div>
     <h2 class="rev-h" style="margin-top:26px">Papelera (eliminadas)</h2>
@@ -319,18 +321,20 @@
       <h2>Registrar oportunidad</h2>
       <p class="hint">Sustituye la fila del Excel. Desplegables controlados y fechas reales, no texto libre.</p>
       <form class="grid" id="oppform" autocomplete="off">
-        <label class="full">Cliente <span class="req">*</span><input name="cliente" required placeholder="Nombre de la cuenta"></label>
+        <label class="full">Cliente <span class="req">*</span><select name="cliente" required data-fill="cliente"></select></label>
         <label>Territorio <span class="req">*</span><select name="region" required data-fill="region"></select></label>
-        <label>KAM<input name="kam" placeholder="Comercial de la cuenta"></label>
+        <label>KAM<select name="kam" data-fill="kam"></select></label>
         <label>BDM <span class="req">*</span><select name="bdm" required data-fill="bdm"></select></label>
         <label>Sector<select name="sector" data-fill="sector"></select></label>
         <label>Tipología<select name="tipologia" data-fill="tipologia"></select></label>
         <label>Estado <span class="req">*</span><select name="estado" required data-fill="estado"></select></label>
+        <label class="chk"><input type="checkbox" name="revisar_chk"> <span>🚩 Marcar para revisar</span></label>
+        <label>Motivo de revisión<select name="revisar_motivo" data-motivos disabled></select></label>
         <label>Valor / AOV (€)<input name="aov" type="number" min="0" step="1" placeholder="0"></label>
         <label>Recurrente anual (€)<input name="rec" type="number" min="0" step="1" placeholder="0"></label>
         <label>Fecha de inclusión<input name="apertura" type="date"></label>
         <label>Fecha estimada de cierre<input name="cierre" type="date"></label>
-        <label>Partner<input name="partner" placeholder="Partner principal"></label>
+        <label>Partner<select name="partner" data-fill="partner"></select></label>
         <label class="full">Descripción de la oportunidad<textarea name="desc" placeholder="Qué se está trabajando…"></textarea></label>
         <label class="full">Nota de seguimiento<textarea name="notas" placeholder="Actualización (se guarda con fecha automática)"></textarea></label>
         <div class="form-actions full">
@@ -404,9 +408,15 @@
       <ul>
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
         <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
-        <li><b>Revisión:</b> duplicados, sin clasificar, casos a revisar y papelera de eliminadas.</li>
+        <li><b>Revisión:</b> duplicados, sin clasificar, casos marcados con 🚩 para revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
         <li><b>Registros:</b> tabla + Importar / Exportar / Normalizar.</li>
+      </ul>
+
+      <h3>Marcar una oportunidad para revisar</h3>
+      <ul>
+        <li>En <b>Nueva oportunidad</b> o en la ficha (clic en una tarjeta), marca la casilla <b>🚩 Marcar para revisar</b> y elige el motivo (por defecto, <i>Atribución por defecto</i>).</li>
+        <li>La tarjeta muestra el distintivo <b>🚩</b> en el <b>Tablero</b> y aparece en <b>Revisión › Casos a revisar</b>.</li>
       </ul>
 
       <h3>Filtros</h3>
@@ -484,8 +494,8 @@
     <h2 id="m-title">Oportunidad</h2>
     <p class="m-sub" id="m-sub"></p>
     <div class="m-grid">
-      <label class="full">Cliente<input id="m-cliente"></label>
-      <label>KAM<input id="m-kam"></label>
+      <label class="full">Cliente<select id="m-cliente" data-fill="cliente"></select></label>
+      <label>KAM<select id="m-kam" data-fill="kam"></select></label>
       <label>Estado<select id="m-estado"></select></label>
       <label>Territorio<select id="m-region"></select></label>
       <label>BDM<select id="m-bdm"></select></label>
@@ -495,7 +505,9 @@
       <label>Recurrente anual (€)<input id="m-rec" type="number" min="0" step="1"></label>
       <label>Fecha de inclusión<input id="m-apertura" type="date"></label>
       <label>Fecha cierre<input id="m-cierre" type="date"></label>
-      <label>Partner<input id="m-partner"></label>
+      <label>Partner<select id="m-partner" data-fill="partner"></select></label>
+      <label class="chk"><input type="checkbox" id="m-revisar-chk"> <span>🚩 Marcar para revisar</span></label>
+      <label>Motivo de revisión<select id="m-revisar-motivo" data-motivos disabled></select></label>
       <label class="full" id="m-motivo-wrap" style="display:none">Motivo de KO<select id="m-motivo"></select></label>
       <label class="full">Descripción<textarea id="m-desc" placeholder="Descripción de la oportunidad"></textarea></label>
       <label class="full">Añadir nota de seguimiento<textarea id="m-nota" placeholder="Se registra con fecha en el histórico"></textarea></label>
@@ -517,9 +529,28 @@ const MOTIVOS_KO=["Precio / presupuesto","No encaja la solución","Sin partner a
 const KO_DEFAULT_AOV=40000;   // valor por defecto para oportunidades perdidas sin importe
 
 /* alias maps — mismo nombre = misma forma (también al teclear nuevos) */
-const CANON_KAM={"angel fernandez":"Ángel Fernández Montoro","jorge de calatrava":"Jorge Calatrava","jose felix":"José Félix Villena","luis mouriño":"Luis González Mouriño","luis gonzalez mouriño":"Luis González Mouriño","ruben ruiz":"Rubén Ruiz","pablo garcía":"Pablo García Bauza","pablo garcia":"Pablo García Bauza","maria jose miguens":"María José Miguens"};
+/* alias de KAM: la clave va normalizada (sin acentos, minúsculas) */
+const CANON_KAM={
+  "angel fernandez":"Ángel Fernández Montoro","angel fernandez montoro":"Ángel Fernández Montoro",
+  "jorge de calatrava":"Jorge Calatrava","jorge calatrava":"Jorge Calatrava",
+  "jose felix":"José Félix Villena","jose felix villena":"José Félix Villena",
+  "luis mourino":"Luis González Mouriño","luis gonzalez mourino":"Luis González Mouriño",
+  "ruben ruiz":"Rubén Ruiz",
+  "pablo garcia":"Pablo García Bauza","pablo garcia bauza":"Pablo García Bauza",
+  "maria jose miguens":"María José Miguens",
+  "luis blanco":"Luis Blanco Barrio","luis blanco barrio":"Luis Blanco Barrio",
+  "antonio rochela":"Toni Rochela","toni rochela":"Toni Rochela",
+  "kike amor":"Enrique Amor","enrique amor":"Enrique Amor",
+  "borja gonzalez":"Borja Gonzálvez Raga","borja gonzalez raga":"Borja Gonzálvez Raga","borja gonzalvez raga":"Borja Gonzálvez Raga"
+};
 const CANON_CLIENTE={"consulta ayuntamiento las palmas":"Ayuntamiento de Las Palmas","fain":"Fain Ascensores"};
-function canonKam(v){if(v==null)return"—";const s=String(v).trim();return CANON_KAM[s.toLowerCase()]||s;}
+/* limpia el nombre de KAM: quita anotaciones "(J)", se queda con la 1ª persona si hay "A / B", y aplica alias */
+function canonKam(v){
+  if(v==null)return"—";
+  let s=String(v).replace(/\([^)]*\)/g," ").split("/")[0].replace(/\s+/g," ").trim();
+  if(!s)return"—";
+  return CANON_KAM[normKey(s)]||s;
+}
 function canonCliente(v){if(v==null)return"—";const s=String(v).trim();return CANON_CLIENTE[s.toLowerCase()]||s;}
 /* ---- correcciones de vocabulario: sector y tipología (misma cosa escrita distinto) ---- */
 const CANON_SECTOR={"real state":"Inmobiliario","real state/construccion":"Inmobiliario","inmobiliario":"Inmobiliario","alimentacion":"Alimentación","alimentacion retail":"Alimentación","bebidas":"Gran consumo","gran consumo":"Gran consumo","finanzas":"Banca","tech retail":"Retail","sanidad":"Sanidad","energia":"Energía","centro investigacion":"Centro Investigación","seguridad":"Seguridad"};
@@ -803,7 +834,7 @@ function renderTable(rows){
   const sorted=[...rows].sort(tableComparator);
   document.getElementById("tbody").innerHTML=sorted.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
     return `<tr data-id="${d.id}"><td>${escHtml(d.cliente)}</td><td>${escHtml(d.region)}</td><td>${escHtml(d.bdm)}</td><td>${escHtml(d.kam)}</td><td>${escHtml(d.tipologia)}</td>
-      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span>${d.revisar?` <span class="pill" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">⟳ ${escHtml(d.revisar)}</span>`:""}</td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
+      <td><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span>${d.revisar?` <span class="pill" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">🚩 ${escHtml(d.revisar)}</span>`:""}</td><td class="num">${d.aov?eur(d.aov):"—"}</td><td>${d.cierre||"—"}</td><td>${semestreOf(d)||"—"}</td></tr>`;}).join("");
   document.querySelectorAll('#tbody tr').forEach(tr=>tr.addEventListener('click',()=>openEdit(+tr.dataset.id)));
   document.getElementById("table-count").textContent=rows.length+" registros";
   document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{
@@ -830,7 +861,7 @@ function renderBoard(rows){
       const desc=d.desc?`<div class="kc-desc" title="${escHtml(d.desc)}">${escHtml(d.desc)}</div>`:"";
       const n=dup[normKey(d.cliente)]||1;const isDup=d.estado!=="Perdida / KO"&&n>1;
       const dupBadge=isDup?`<span class="kc-dup" title="Este cliente aparece en ${n} oportunidades — posible duplicado">⚠ ×${n}</span>`:"";
-      const revBadge=d.revisar?`<span class="kc-rev" title="Sub-estado marcado en el Excel — a revisar">⟳ ${escHtml(d.revisar)}</span>`:"";
+      const revBadge=d.revisar?`<span class="kc-rev" title="Marcada para revisar: ${escHtml(d.revisar)}">🚩 ${escHtml(d.revisar)}</span>`:"";
       return `<div class="kcard${isDup?" is-dup":""}" draggable="true" data-id="${d.id}"><div class="stripe" style="background:${STAGE_COLOR[s]}"></div><button class="kc-dup-btn" data-dup="${d.id}" title="Duplicar oportunidad" draggable="false">⧉ Duplicar</button><div class="kc-cli">${escHtml(d.cliente)}${dupBadge}${revBadge}</div>${tipo}<div class="kc-meta"><span>${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="kc-aov">${d.aov?eur(d.aov):""}</span></div>${desc}<div class="kc-date"><span>${d.apertura?("📅 "+d.apertura):"sin fecha"}</span>${sem?`<span class="sembadge">${sem}</span>`:""}</div></div>`;}).join("");
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
@@ -886,7 +917,7 @@ function renderRevisar(rows){
   if(!items.length){sum.innerHTML="";list.innerHTML=`<div class="card"><p class="hint" style="margin:0">✓ Ningún caso a revisar en el filtro actual.</p></div>`;return;}
   sum.innerHTML=`<b>${items.length}</b> oportunidades a revisar`;
   const rowsHtml=items.map(d=>{const p=STATE_PILL[d.estado]||["var(--ink-2)","var(--surface-2)"];
-    return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">⟳ ${escHtml(d.revisar)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
+    return `<div class="dup-item" data-id="${d.id}"><span class="pill" style="color:${p[0]};background:${p[1]}">${escHtml(d.estado)}</span><span class="di-tipo">🚩 ${escHtml(d.revisar)}</span><span class="di-meta">${escHtml(d.cliente)} · ${escHtml(d.bdm)} · ${escHtml(d.region)}</span><span class="di-aov">${d.aov?eur(d.aov):"—"}</span></div>`;}).join("");
   list.innerHTML=`<div class="dup-group warn"><div class="dup-items">${rowsHtml}</div></div>`;
   document.querySelectorAll('#revisar .dup-item').forEach(el=>el.addEventListener('click',()=>openEdit(+el.dataset.id)));
 }
@@ -977,7 +1008,7 @@ function applyStage(d,newStage,motivo,via){
   let extra="";
   if(newStage==="Perdida / KO"&&!d.aov){d.aov=KO_DEFAULT_AOV;extra=` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`;}
   d.history.push({d:today(),t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
-  d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";else d.revisar="";
+  d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";
   buildAllFilters();render();
   const undo=()=>{d.estado=prev.estado;d.aov=prev.aov;d.motivo_ko=prev.motivo_ko;d.revisar=prev.revisar;
     d.history.length=prev.histLen;buildAllFilters();render();uiNotice(`Cambio deshecho · ${d.cliente} vuelve a «${prev.estado}»`);};
@@ -1009,23 +1040,36 @@ kbEl.addEventListener("drop",e=>{const col=e.target.closest(".col");if(!col||dra
 
 /* ---- edit modal ---- */
 let editId=null;
+/* select "abierto": opciones existentes + el valor actual + la opción de añadir uno nuevo */
+function setOpenSel(id,k,val){
+  const el=document.getElementById(id);if(!el)return;
+  let opts=optsFor(k);
+  if(val&&!opts.some(o=>normKey(o)===normKey(val)))opts=[val,...opts];
+  el.innerHTML=`<option value="">— sin asignar —</option>`+opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("")
+    +`<option value="${ADD_NEW}">${ADD_NEW}</option>`;
+  el.value=val||"";
+}
 function fillSel(el,opts,val){el.innerHTML=opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("");}
 function openEdit(id){
   const d=DATA.find(x=>x.id===id);if(!d)return;editId=id;
   document.getElementById("m-title").textContent=d.cliente;
-  document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`+(d.revisar?` · ⟳ ${d.revisar}`:"");
-  document.getElementById("m-cliente").value=d.cliente;
-  document.getElementById("m-kam").value=(d.kam&&d.kam!=="—")?d.kam:"";
+  document.getElementById("m-sub").textContent=`${d.tipologia} · ${d.sector} · KAM ${d.kam}`+(d.revisar?` · 🚩 ${d.revisar}`:"");
+  {const chk=document.getElementById("m-revisar-chk"),msel=document.getElementById("m-revisar-motivo");
+    chk.checked=!!d.revisar;
+    msel.value=MOTIVOS_REVISION.includes(d.revisar)?d.revisar:MOTIVOS_REVISION[0];
+    msel.disabled=!chk.checked;}
+  setOpenSel("m-cliente","cliente",d.cliente);
+  setOpenSel("m-kam","kam",(d.kam&&d.kam!=="—")?d.kam:"");
+  setOpenSel("m-partner","partner",d.partner||"");
+  setOpenSel("m-sector","sector",d.sector);
+  setOpenSel("m-tipologia","tipologia",d.tipologia);
   fillSel(document.getElementById("m-estado"),ALL_STAGES.includes(d.estado)?ALL_STAGES:[d.estado,...ALL_STAGES],d.estado);
   fillSel(document.getElementById("m-region"),REGIONS,d.region);
   fillSel(document.getElementById("m-bdm"),uniq("bdm"),d.bdm);
-  fillSel(document.getElementById("m-sector"),[...new Set([d.sector,...uniq("sector")].filter(Boolean))],d.sector);
-  fillSel(document.getElementById("m-tipologia"),[...new Set([d.tipologia,...uniq("tipologia")].filter(Boolean))],d.tipologia);
   document.getElementById("m-aov").value=d.aov||"";
   document.getElementById("m-rec").value=d.rec||"";
   document.getElementById("m-apertura").value=d.apertura||"";
   document.getElementById("m-cierre").value=d.cierre||"";
-  document.getElementById("m-partner").value=d.partner||"";
   document.getElementById("m-desc").value=d.desc||"";
   document.getElementById("m-nota").value="";
   fillSel(document.getElementById("m-motivo"),MOTIVOS_KO,d.motivo_ko&&MOTIVOS_KO.includes(d.motivo_ko)?d.motivo_ko:MOTIVOS_KO[0]);
@@ -1067,7 +1111,10 @@ document.getElementById("m-save").addEventListener("click",()=>{
   d.partner=document.getElementById("m-partner").value.trim();
   d.desc=document.getElementById("m-desc").value.trim();
   d.estado=nEstado;d.aov=nAov;d.region=nReg;d.bdm=nBdm;d.apertura=nApertura;d.cierre=nCierre;d.motivo_ko=nMotivo;
-  if(nEstado!=="Perdida / KO")d.revisar="";
+  {const chk=document.getElementById("m-revisar-chk"),msel=document.getElementById("m-revisar-motivo");
+    const nRev=chk.checked?(msel.value||MOTIVOS_REVISION[0]):"";
+    if(nRev!==d.revisar)d.history.push({d:today(),t:nRev?`Marcada para revisar · ${nRev}`:"Desmarcada de revisión"});
+    d.revisar=nRev;}
   closeModal();buildAllFilters();render();
   notifySaved(d,`${d.cliente} → ${nEstado}`);
 });
@@ -1106,18 +1153,69 @@ document.getElementById('funnel-mode').addEventListener('click',e=>{const b=e.ta
   funnelMode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');renderFunnel(filtered());});
 
 /* form */
+const MOTIVOS_REVISION=["Atribución por defecto","Importe a confirmar","Cliente a confirmar","Posible duplicado","Otro"];
+const ADD_NEW="＋ Añadir nuevo…";   // opción especial en los desplegables abiertos (cliente, KAM, partner…)
+const OPEN_FIELDS={cliente:"cliente",kam:"KAM",partner:"partner",sector:"sector",tipologia:"tipología"};
+/* valores extra escritos por el usuario, para que sigan en la lista aunque aún no estén en ningún registro */
+let EXTRA_OPTS={};try{EXTRA_OPTS=JSON.parse(localStorage.getItem(LS_KEY+"_opts")||"{}")||{};}catch(e){EXTRA_OPTS={};}
+function addExtraOpt(k,v){if(!v)return;(EXTRA_OPTS[k]=EXTRA_OPTS[k]||[]);if(!EXTRA_OPTS[k].some(x=>normKey(x)===normKey(v)))EXTRA_OPTS[k].push(v);
+  try{localStorage.setItem(LS_KEY+"_opts",JSON.stringify(EXTRA_OPTS));}catch(e){}}
+function optsFor(k){
+  if(k==="estado")return ALL_STAGES;
+  if(k==="region")return REGIONS;
+  const base=uniq(k).filter(v=>v&&v!=="—");
+  const extra=(EXTRA_OPTS[k]||[]).filter(v=>!base.some(b=>normKey(b)===normKey(v)));
+  return [...base,...extra].sort((a,b)=>String(a).localeCompare(String(b),"es"));
+}
+function fillMotivosRevision(){
+  document.querySelectorAll('select[data-motivos]').forEach(sel=>{const prev=sel.value;
+    sel.innerHTML=MOTIVOS_REVISION.map(m=>`<option>${escHtml(m)}</option>`).join("");
+    if(prev&&MOTIVOS_REVISION.includes(prev))sel.value=prev;});
+}
+/* el desplegable de motivo solo se activa si la casilla está marcada */
+function bindRevisar(chk,sel){
+  if(!chk||!sel)return;
+  const sync=()=>{sel.disabled=!chk.checked;if(!chk.checked)sel.value=MOTIVOS_REVISION[0];};
+  chk.addEventListener("change",sync);sync();
+}
 function fillFormSelects(){
-  document.querySelectorAll('select[data-fill]').forEach(sel=>{const k=sel.dataset.fill;let opts;
-    if(k==="estado")opts=ALL_STAGES;else if(k==="region")opts=REGIONS;else opts=uniq(k);
-    sel.innerHTML=`<option value="">— elige —</option>`+opts.map(o=>`<option>${escHtml(o)}</option>`).join("");});
+  document.querySelectorAll('select[data-fill]').forEach(sel=>{if(sel.closest('#backdrop'))return;const k=sel.dataset.fill;
+    const prev=sel.value;
+    const open=k in OPEN_FIELDS;
+    sel.innerHTML=`<option value="">— elige —</option>`+optsFor(k).map(o=>`<option>${escHtml(o)}</option>`).join("")
+      +(open?`<option value="${ADD_NEW}">${ADD_NEW}</option>`:"");
+    if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+  });
+}
+/* al elegir "Añadir nuevo…" se pide el valor y se incorpora a la lista */
+document.addEventListener("change",e=>{
+  const sel=e.target;
+  if(!(sel instanceof HTMLSelectElement)||!sel.dataset.fill||sel.value!==ADD_NEW)return;
+  const k=sel.dataset.fill,etiqueta=OPEN_FIELDS[k]||k;
+  const v=(window.prompt(`Nuevo ${etiqueta}:`)||"").trim();
+  if(!v){sel.value="";return;}
+  const canon=k==="cliente"?canonCliente(v):k==="kam"?canonKam(v):k==="sector"?canonSector(v):k==="tipologia"?canonTipologia(v):v;
+  addExtraOpt(k,canon);
+  fillFormSelects();fillModalOpenSelects();
+  sel.value=canon;
+  uiNotice(`${etiqueta.charAt(0).toUpperCase()+etiqueta.slice(1)} añadido: ${canon}`);
+});
+function fillModalOpenSelects(){
+  if(!editId)return;const d=DATA.find(x=>x.id===editId);if(!d)return;
+  const cur=id=>{const e=document.getElementById(id);return e?e.value:"";};
+  setOpenSel("m-cliente","cliente",cur("m-cliente")===ADD_NEW?d.cliente:cur("m-cliente"));
+  setOpenSel("m-kam","kam",cur("m-kam")===ADD_NEW?"":cur("m-kam"));
+  setOpenSel("m-partner","partner",cur("m-partner")===ADD_NEW?"":cur("m-partner"));
+  setOpenSel("m-sector","sector",cur("m-sector")===ADD_NEW?d.sector:cur("m-sector"));
+  setOpenSel("m-tipologia","tipologia",cur("m-tipologia")===ADD_NEW?d.tipologia:cur("m-tipologia"));
 }
 document.getElementById('oppform').addEventListener('submit',e=>{
   e.preventDefault();if(cloudBlocked())return;const fd=Object.fromEntries(new FormData(e.target).entries());
   const rec={id:nextId++,cliente:canonCliente(clean(fd.cliente,"—")),region:normRegion(fd.region),bdm:normBdm(fd.bdm),kam:canonKam(clean(fd.kam,"—")),
     sector:canonSector(fd.sector),tipologia:canonTipologia(fd.tipologia),
-    estado:normEstado(fd.estado),revisar:"",aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:fd.apertura||today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
+    estado:normEstado(fd.estado),revisar:(fd.revisar_chk?(fd.revisar_motivo||MOTIVOS_REVISION[0]):""),aov:Number(fd.aov)||0,rec:Number(fd.rec)||0,apertura:fd.apertura||today(),cierre:fd.cierre||"",partner:clean(fd.partner,""),desc:clean(fd.desc,""),motivo_ko:"",
     history:[{d:today(),t:"Creada"+(fd.notas?" · "+fd.notas.trim():"")}]};
-  DATA.unshift(rec);e.target.reset();prefillFecha();
+  DATA.unshift(rec);e.target.reset();prefillFecha();document.querySelector('#oppform [name="revisar_motivo"]').disabled=true;
   const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
   buildAllFilters();render();
 });
@@ -1315,6 +1413,9 @@ document.getElementById('rep-print').addEventListener('click',()=>window.print()
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters4').addEventListener('change',()=>{syncFilters();render();});
+fillMotivosRevision();
+bindRevisar(document.querySelector('#oppform [name="revisar_chk"]'),document.querySelector('#oppform [name="revisar_motivo"]'));
+bindRevisar(document.getElementById("m-revisar-chk"),document.getElementById("m-revisar-motivo"));
 buildAllFilters();render();cloudInit();
 </script>
 
