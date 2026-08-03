@@ -130,6 +130,8 @@
   @media(max-width:760px){form.grid{grid-template-columns:1fr}}
   form.grid .full{grid-column:1/-1}
   form.grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--ink-2)}
+  .sel-search{font-size:12px!important;padding:5px 9px!important;margin-bottom:4px}
+  .sel-search::-webkit-search-cancel-button{cursor:pointer}
   label.chk{flex-direction:row!important;align-items:center;gap:8px;align-self:end;padding-bottom:9px}
   label.chk input{width:auto!important;min-width:0;accent-color:var(--accent)}
   form.grid input,form.grid select,form.grid textarea{min-width:0;width:100%}
@@ -1045,9 +1047,11 @@ function setOpenSel(id,k,val){
   const el=document.getElementById(id);if(!el)return;
   let opts=optsFor(k);
   if(val&&!opts.some(o=>normKey(o)===normKey(val)))opts=[val,...opts];
-  el.innerHTML=`<option value="">— sin asignar —</option>`+opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("")
-    +`<option value="${ADD_NEW}">${ADD_NEW}</option>`;
+  el.innerHTML=`<option value="">— sin asignar —</option><option value="${ADD_NEW}">${ADD_NEW}</option><option disabled>──────────</option>`
+    +opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("");
   el.value=val||"";
+  attachSearch(el);
+  const si=el.previousElementSibling;if(si&&si.classList.contains('sel-search')){si.value='';[...el.options].forEach(o=>o.hidden=false);}
 }
 function fillSel(el,opts,val){el.innerHTML=opts.map(o=>`<option${o===val?" selected":""}>${escHtml(o)}</option>`).join("");}
 function openEdit(id){
@@ -1178,13 +1182,35 @@ function bindRevisar(chk,sel){
   const sync=()=>{sel.disabled=!chk.checked;if(!chk.checked)sel.value=MOTIVOS_REVISION[0];};
   chk.addEventListener("change",sync);sync();
 }
+/* buscador sobre un desplegable largo: filtra sus opciones al escribir */
+function attachSearch(sel){
+  if(!sel||sel.previousElementSibling&&sel.previousElementSibling.classList.contains("sel-search"))return;
+  const inp=document.createElement("input");
+  inp.type="search";inp.className="sel-search";inp.placeholder="🔍 Buscar…";inp.autocomplete="off";
+  inp.addEventListener("input",()=>{
+    const q=normKey(inp.value);
+    let visibles=0;
+    [...sel.options].forEach(o=>{
+      const especial=o.value===""||o.value===ADD_NEW||o.disabled;
+      const match=!q||normKey(o.text).includes(q);
+      o.hidden=!especial&&!match;
+      if(!especial&&match)visibles++;
+    });
+    // si solo queda una coincidencia, la selecciona para agilizar
+    if(q&&visibles===1){const u=[...sel.options].find(o=>!o.hidden&&o.value&&o.value!==ADD_NEW&&!o.disabled);if(u)sel.value=u.value;}
+  });
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();sel.focus();}});
+  sel.parentNode.insertBefore(inp,sel);
+}
 function fillFormSelects(){
   document.querySelectorAll('select[data-fill]').forEach(sel=>{if(sel.closest('#backdrop'))return;const k=sel.dataset.fill;
     const prev=sel.value;
     const open=k in OPEN_FIELDS;
-    sel.innerHTML=`<option value="">— elige —</option>`+optsFor(k).map(o=>`<option>${escHtml(o)}</option>`).join("")
-      +(open?`<option value="${ADD_NEW}">${ADD_NEW}</option>`:"");
+    sel.innerHTML=`<option value="">— elige —</option>`
+      +(open?`<option value="${ADD_NEW}">${ADD_NEW}</option><option disabled>──────────</option>`:"")
+      +optsFor(k).map(o=>`<option>${escHtml(o)}</option>`).join("");
     if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+    if(open)attachSearch(sel);
   });
 }
 /* al elegir "Añadir nuevo…" se pide el valor y se incorpora a la lista */
