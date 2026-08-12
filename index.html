@@ -595,7 +595,7 @@
       <label>Fecha cierre<input id="m-cierre" type="date"></label>
       <label>Partner<div class="cbx" data-fill="partner"><input class="cbx-input" id="m-partner" placeholder="Buscar o añadir…" role="combobox" aria-expanded="false" aria-autocomplete="list"><button type="button" class="cbx-caret" tabindex="-1" aria-label="Ver todos">▼</button><div class="cbx-pop" role="listbox" hidden></div></div></label>
       <label class="chk"><input type="checkbox" id="m-revisar-chk"> <span>🚩 Marcar para revisar</span></label>
-      <label>Motivo de revisión<select id="m-revisar-motivo" data-motivos disabled></select></label>
+      <label id="m-rev-wrap" hidden>Motivo de revisión<select id="m-revisar-motivo" data-motivos disabled></select></label>
       <label class="full" id="m-motivo-wrap" style="display:none">Motivo de KO<select id="m-motivo"></select></label>
       <label class="full">Descripción<textarea id="m-desc" placeholder="Descripción de la oportunidad"></textarea></label>
       <label class="full">Añadir nota de seguimiento<textarea id="m-nota" placeholder="Se registra con fecha en el histórico"></textarea></label>
@@ -954,7 +954,7 @@ function renderBoard(rows){
     return `<div class="col" data-stage="${s}"><h3><span>${s}</span><span style="color:var(--ink-3)">${items.length}</span></h3><div class="col-val">${eur(val)}</div>${cards||'<p class="hint" style="margin:0">—</p>'}</div>`;
   }).join("");
   const k=document.getElementById("kanban");k.innerHTML=cols;
-  k.querySelectorAll('.kcard').forEach(c=>c.addEventListener('click',()=>{if(!dragId)openEdit(+c.dataset.id);}));
+  k.querySelectorAll('.kcard').forEach(c=>c.addEventListener('click',()=>{if(Date.now()-lastDragAt>250)openEdit(+c.dataset.id);}));
   k.querySelectorAll('.kc-dup-btn').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();duplicateOpp(+btn.dataset.dup);}));
 }
 /* duplicar oportunidad desde el tablero: crea una copia nueva (misma info) con fecha de inclusión de hoy */
@@ -1120,11 +1120,16 @@ document.getElementById("ko-save").addEventListener("click",()=>{
   applyStage(d,"Perdida / KO",motivo,"tablero");closeKo();
 });
 let dragId=null;
+let dragStartAt=0,dragDropped=false,lastDragAt=0,dragCardId=null;
 const kbEl=document.getElementById("kanban");
-kbEl.addEventListener("dragstart",e=>{const c=e.target.closest(".kcard");if(!c)return;dragId=+c.dataset.id;c.classList.add("dragging");if(e.dataTransfer){e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(dragId));}});
-kbEl.addEventListener("dragend",e=>{const c=e.target.closest(".kcard");if(c)c.classList.remove("dragging");kbEl.querySelectorAll(".col").forEach(x=>x.classList.remove("drop"));setTimeout(()=>{dragId=null;},0);});
+kbEl.addEventListener("dragstart",e=>{const c=e.target.closest(".kcard");if(!c)return;dragId=+c.dataset.id;dragCardId=dragId;dragStartAt=Date.now();dragDropped=false;c.classList.add("dragging");if(e.dataTransfer){e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(dragId));}});
+kbEl.addEventListener("dragend",e=>{const c=e.target.closest(".kcard");if(c)c.classList.remove("dragging");kbEl.querySelectorAll(".col").forEach(x=>x.classList.remove("drop"));
+  // si el arrastre no cambió de columna y fue muy breve, en realidad era un clic: abrimos la ficha
+  const id=dragCardId,breve=Date.now()-dragStartAt<700;
+  if(!dragDropped&&breve&&id!=null)setTimeout(()=>openEdit(id),0);
+  dragId=null;dragCardId=null;});
 kbEl.addEventListener("dragover",e=>{const col=e.target.closest(".col");if(!col||dragId==null)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="move";kbEl.querySelectorAll(".col").forEach(x=>x.classList.toggle("drop",x===col));});
-kbEl.addEventListener("drop",e=>{const col=e.target.closest(".col");if(!col||dragId==null)return;e.preventDefault();const id=dragId;const s=col.dataset.stage;kbEl.querySelectorAll(".col").forEach(x=>x.classList.remove("drop"));changeStage(id,s);});
+kbEl.addEventListener("drop",e=>{const col=e.target.closest(".col");if(!col||dragId==null)return;e.preventDefault();const id=dragId;const s=col.dataset.stage;kbEl.querySelectorAll(".col").forEach(x=>x.classList.remove("drop"));const act=DATA.find(x=>x.id===id);if(act&&act.estado!==s){dragDropped=true;lastDragAt=Date.now();}dragId=null;changeStage(id,s);});
 
 /* ---- edit modal ---- */
 let editId=null;
@@ -1136,7 +1141,8 @@ function openEdit(id){
   {const chk=document.getElementById("m-revisar-chk"),msel=document.getElementById("m-revisar-motivo");
     chk.checked=!!d.revisar;
     msel.value=MOTIVOS_REVISION.includes(d.revisar)?d.revisar:MOTIVOS_REVISION[0];
-    msel.disabled=!chk.checked;}
+    msel.disabled=!chk.checked;
+    const w=document.getElementById("m-rev-wrap");if(w)w.hidden=!chk.checked;}
   setComboValue("m-cliente",d.cliente);
   setComboValue("m-kam",(d.kam&&d.kam!=="—")?d.kam:"");
   setComboValue("m-partner",d.partner||"");
@@ -1333,8 +1339,7 @@ function initCombo(box){
   }
   function open(q){box.classList.add("open");pop.hidden=false;inp.setAttribute("aria-expanded","true");paint(q==null?"":q);}
 
-  inp.addEventListener("focus",()=>open(""));
-  inp.addEventListener("mousedown",()=>{if(pop.hidden)setTimeout(()=>open(""),0);});
+  inp.addEventListener("mousedown",()=>{if(pop.hidden)setTimeout(()=>open(""),0);});   // no se abre por foco: evita que se despliegue al abrir la ficha
   box.querySelector(".cbx-caret").addEventListener("mousedown",e=>{e.preventDefault();
     if(pop.hidden){inp.focus();open("");}else close();});
   inp.addEventListener("input",e=>{
@@ -1595,6 +1600,8 @@ document.getElementById('filters4').addEventListener('change',()=>{syncFilters()
 fillMotivosRevision();
 bindRevisar(document.querySelector('#oppform [name="revisar_chk"]'),document.querySelector('#oppform [name="revisar_motivo"]'));
 bindRevisar(document.getElementById("m-revisar-chk"),document.getElementById("m-revisar-motivo"));
+document.getElementById("m-revisar-chk").addEventListener("change",e=>{
+  const w=document.getElementById("m-rev-wrap");if(w)w.hidden=!e.target.checked;});
 buildAllFilters();render();cloudInit();
 </script>
 
