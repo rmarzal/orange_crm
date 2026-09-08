@@ -57,21 +57,20 @@ pública: es un fichero que se reparte y se abre en local.
 
 ## Reports
 
-El informe usa toda la cartera del BDM seleccionado, con un selector propio
-independiente de los filtros del dashboard. El funnel muestra la distribución
-actual, incluyendo ganadas, perdidas y sin clasificar; no calcula conversiones
-históricas. El ranking prioriza las cinco propuestas abiertas de mayor AOV
-positivo, incluidas las ofertas enviadas.
+El informe usa un único filtro de BDM. Muestra una distribución sencilla por
+etapa con número e importe, las cinco propuestas abiertas de mayor AOV y las
+propuestas sin avanzar durante 30 días o más. También redacta un texto breve
+con el contexto del BDM seleccionado; ese texto se puede editar directamente
+en pantalla y se conserva mientras trabajas con ese BDM.
 
 Las alertas incluyen propuestas abiertas con al menos 30 días sin cambiar de
-etapa. El umbral puede cambiarse a 14, 60 o 90 días. Se utiliza la última
-transición registrada, compatible con el histórico anterior; las nuevas
-transiciones guardan también origen y destino de forma estructurada. Las notas
-y cambios de importe no reinician el contador. Sin transiciones, se estima
-la antigüedad desde la inclusión o el alta y se etiqueta como estimada. Las
-fechas ausentes, inválidas, futuras o los históricos inconsistentes se muestran
-como antigüedad sin determinar. Las alertas indican permanencia en etapa,
-no ausencia de actividad comercial.
+etapa. Se utiliza la última transición registrada, compatible con el histórico
+anterior; las nuevas transiciones guardan también origen y destino de forma
+estructurada. Las notas y cambios de importe no reinician el contador. Sin
+transiciones, se estima la antigüedad desde la inclusión o el alta y se
+etiqueta como estimada. Las fechas ausentes, inválidas, futuras o los
+históricos inconsistentes se muestran como antigüedad sin determinar. Las
+alertas indican permanencia en etapa, no ausencia de actividad comercial.
 
 Puedes editar las propuestas abriendo su ficha desde el nombre del cliente.
 **Descargar informe editable** genera una copia HTML autónoma: ábrela en el
