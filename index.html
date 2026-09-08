@@ -280,7 +280,7 @@
   #reports .rep-metric:nth-child(1) .rm-val{color:var(--s2)}
   #reports .rep-metric:nth-child(2) .rm-val{color:var(--good)}
   #reports .rep-metric:nth-child(3) .rm-val{color:var(--accent-ink)}
-  #reports .rep-draft{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;padding:17px 18px;min-height:128px;font-size:14px;line-height:1.65}
+  #reports .rep-draft{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;padding:17px 18px;min-height:128px;font-size:14px;line-height:1.65;white-space:pre-wrap}
   #reports .rep-draft+ .hint{font-size:12px;margin-top:8px}
   #reports .twrap{border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;box-shadow:none}
   #reports .rep-matrix th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;background:var(--surface-2)}
@@ -558,7 +558,7 @@
       <h3>Pestañas</h3>
       <ul>
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
-        <li><b>Reports:</b> informe sencillo por BDM con número e importe por etapa y las cinco propuestas de mayor importe. El texto y las propuestas se pueden editar o quitar del informe. Permite descargar un Word editable o guardar el informe como PDF.</li>
+        <li><b>Reports:</b> informe sencillo por BDM con número e importe por etapa y las cinco propuestas de mayor importe. La redacción analiza todas las métricas visibles: pipeline, cierres, win rate, reparto, concentración y calidad del dato. El texto y las propuestas se pueden editar o quitar del informe. Permite descargar un Word editable o guardar el informe como PDF.</li>
         <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
         <li><b>Revisión:</b> duplicados, sin clasificar, casos marcados con 🚩 para revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
@@ -882,7 +882,7 @@ function myBdm(){const me=normKey(localStorage.getItem("cloud_user")||"");if(!me
   const hit=[...new Set(DATA.map(d=>d.bdm))].find(b=>b&&normKey(b)===me||b&&me.startsWith(normKey(b)));return hit||"";}
 state.bdm=myBdm();
 let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm="";
-let reportDrafts={},reportOmitted={},renderedReportKey="";
+let reportDrafts={},reportDraftEdited={},reportOmitted={},renderedReportKey="";
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
 function canonicalFilterValue(k,value){
@@ -1164,24 +1164,49 @@ function repOpp(d,age){
     ${d.motivo_ko?`<div class="ro-meta">Motivo KO: ${escHtml(d.motivo_ko)}</div>`:""}</div>`;
 }
 function repSection(title,content,emptyMsg){return `<section class="rep-section"><h3>${escHtml(title)}</h3>${content||`<p class="rep-empty">${escHtml(emptyMsg)}</p>`}</section>`;}
+function repPct(value,total){return total?`${Math.round(value/total*100)}%`:`0%`;}
 function generatedReportText(bdm,rows,open,top){
   const label=bdm||"Todo el equipo",won=rows.filter(d=>d.estado==="Ganada"),lost=rows.filter(d=>d.estado==="Perdida / KO");
-  const stages=REPORT_STAGES.map(stage=>`${stage}: ${rows.filter(d=>d.estado===stage).length}`).join(" · ");
+  const totalValue=repSum(rows),openValue=repSum(open),wonValue=repSum(won),lostValue=repSum(lost),decided=won.length+lost.length;
+  const winRate=decided?won.length/decided:0,valueDecided=wonValue+lostValue,valueWinRate=valueDecided?wonValue/valueDecided:0;
+  const weightedOpen=open.reduce((sum,d)=>sum+repValue(d)*(STAGE_PROB[d.estado]||0),0),avgOpen=open.length?openValue/open.length:0;
+  const stageRows=REPORT_STAGES.map(stage=>({stage,rows:rows.filter(d=>d.estado===stage)})).filter(x=>x.rows.length);
+  const mainByCount=stageRows.slice().sort((a,b)=>b.rows.length-a.rows.length||repSum(b.rows)-repSum(a.rows))[0];
+  const mainByValue=stageRows.slice().sort((a,b)=>repSum(b.rows)-repSum(a.rows)||b.rows.length-a.rows.length)[0];
+  const topValue=repSum(top),topShare=totalValue?topValue/totalValue:0;
+  const missingValue=rows.filter(d=>repValue(d)<=0).length,missingStage=rows.filter(d=>!REPORT_STAGES.includes(d.estado)).length;
+  const stageSummary=stageRows.map(x=>`${x.stage}: ${x.rows.length} (${repPct(x.rows.length,rows.length)}) y ${repMoney(repSum(x.rows))} (${repPct(repSum(x.rows),totalValue)})`).join("; ");
+  const resultText=decided
+    ? `El cierre registra ${won.length} ganadas y ${lost.length} perdidas: win rate del ${Math.round(winRate*100)}% por número y del ${Math.round(valueWinRate*100)}% por importe decidido.`
+    : "Todavía no hay oportunidades decididas; el win rate no es representativo hasta que existan propuestas ganadas o perdidas.";
+  const pipelineText=open.length
+    ? `El pipeline abierto suma ${repMoney(openValue)}, con un ticket medio de ${repMoney(avgOpen)} y un valor ponderado de ${repMoney(weightedOpen)} según la probabilidad de cada etapa.`
+    : "No hay pipeline abierto en la selección actual.";
+  const concentrationText=top.length
+    ? `Las cinco propuestas incluidas concentran ${repMoney(topValue)} (${Math.round(topShare*100)}% del valor total); la de mayor importe es ${top[0].cliente} con ${repMoney(repValue(top[0]))}.`
+    : "No hay propuestas con importe registrado para calcular concentración.";
+  const qualityText=!rows.length
+    ? "No hay datos reales cargados para analizar esta selección."
+    : missingValue||missingStage
+      ? `Calidad del dato: ${missingValue} propuestas sin importe y ${missingStage} sin etapa reconocida; conviene completar esos campos antes de comparar el rendimiento.`
+      : "La selección tiene importe y etapa reconocidos en todas las propuestas.";
   const paragraphs=[
-    `Informe comercial de ${label}.`,
-    `${rows.length} propuestas en cartera; ${open.length} abiertas por ${repMoney(repSum(open))}, ${won.length} ganadas por ${repMoney(repSum(won))} y ${lost.length} perdidas.`,
-    `Distribución actual por etapa: ${stages}.`
+    `Análisis comercial de ${label}: ${rows.length} propuestas por un valor total de ${repMoney(totalValue)}. ${mainByCount?`La etapa con más propuestas es ${mainByCount.stage} (${mainByCount.rows.length}, ${repPct(mainByCount.rows.length,rows.length)}).`:"No hay propuestas cargadas."}`,
+    pipelineText,
+    resultText,
+    `Distribución del funnel: ${stageSummary||"sin datos"}. ${mainByValue?`La mayor concentración de importe está en ${mainByValue.stage}, con ${repMoney(repSum(mainByValue.rows))}.`:""}`,
+    concentrationText,
+    qualityText
   ];
-  if(top.length)paragraphs.push(`Prioridad: ${top.slice(0,3).map(d=>`${d.cliente} (${repMoney(repValue(d))})`).join(", ")}.`);
   return paragraphs.join("\n\n");
 }
 function renderReport(){
   const host=document.getElementById("report");
   const previous=host?.querySelector("[data-report-draft]");
-  if(previous)reportDrafts[renderedReportKey]=previous.innerText.trim();
+  if(previous&&reportDraftEdited[renderedReportKey])reportDrafts[renderedReportKey]=previous.innerText.trim();
   const key=repBdm||"__all__",rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
   const {open}=reportData(rows),top=reportTopRows(rows,key);
-  const draft=reportDrafts[key]||generatedReportText(repBdm,rows,open,top);
+  const draft=reportDraftEdited[key]?(reportDrafts[key]||""):generatedReportText(repBdm,rows,open,top);
   renderedReportKey=key;
   host.innerHTML=`<div class="report" contenteditable="true" aria-label="Informe editable"><h2 contenteditable="true">Informe comercial · ${escHtml(repBdm||"Todo el equipo")}</h2>
     <p class="rep-sub">${repToday()} · Importes AOV · Situación actual de la cartera</p>
@@ -1272,7 +1297,7 @@ document.getElementById("report").addEventListener("click",e=>{
   }
   const b=e.target.closest("[data-report-id]");if(b)openEdit(Number(b.dataset.reportId));
 });
-document.getElementById("report").addEventListener("input",e=>{const draft=e.target.closest("[data-report-draft]");if(draft)reportDrafts[renderedReportKey]=draft.innerText.trim();});
+document.getElementById("report").addEventListener("input",e=>{const draft=e.target.closest("[data-report-draft]");if(draft){reportDraftEdited[renderedReportKey]=true;reportDrafts[renderedReportKey]=draft.innerText.trim();}});
 window.addEventListener("beforeprint",()=>{if(document.getElementById("reports").classList.contains("active")){
   document.querySelectorAll(".rep-stage").forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});
 }});

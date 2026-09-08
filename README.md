@@ -31,7 +31,8 @@ pública: es un fichero que se reparte y se abre en local.
 - **Embudo & Dashboard**: KPIs (abiertas, valor de pipeline, ganadas,
   perdidas, win rate) y embudo de conversión por nº o por €.
 - **Reports**: informe sencillo por BDM, número e importe por etapa y las
-  cinco propuestas de mayor importe. El texto y las propuestas se pueden
+  cinco propuestas de mayor importe. La redacción analiza todas las métricas
+  visibles del funnel y el texto y las propuestas se pueden
   editar o quitar del informe. Incluye descarga DOCX y guardado como PDF.
 - **Tablero Kanban**: arrastrar y soltar entre etapas (queda en el
   histórico) y botón para duplicar una oportunidad.
@@ -58,8 +59,9 @@ pública: es un fichero que se reparte y se abre en local.
 ## Reports
 
 El informe usa un único filtro de BDM. Muestra una distribución sencilla por
-etapa con número e importe y las cinco propuestas de mayor importe. También redacta un texto breve
-con el contexto del BDM seleccionado; ese texto se puede editar directamente
+etapa con número e importe y las cinco propuestas de mayor importe. También redacta un análisis
+de todas las métricas visibles (pipeline, cierres, win rate, reparto por etapa,
+concentración y calidad del dato) con el contexto del BDM seleccionado; ese texto se puede editar directamente
 en pantalla y se conserva mientras trabajas con ese BDM.
 
 Las nuevas transiciones guardan origen y destino de forma estructurada. El
