@@ -30,6 +30,9 @@ pública: es un fichero que se reparte y se abre en local.
 
 - **Embudo & Dashboard**: KPIs (abiertas, valor de pipeline, ganadas,
   perdidas, win rate) y embudo de conversión por nº o por €.
+- **Reports**: funnel por BDM (o todo el equipo), número e importe por
+  etapa, top 5 de propuestas abiertas por AOV, alertas de propuestas sin
+  avanzar y detalle desplegable con acceso a cada ficha. Incluye impresión/PDF.
 - **Tablero Kanban**: arrastrar y soltar entre etapas (queda en el
   histórico) y botón para duplicar una oportunidad.
 - **Revisión**: clientes duplicados, oportunidades sin clasificar, casos
@@ -51,6 +54,27 @@ pública: es un fichero que se reparte y se abre en local.
   importe; motivo de KO obligatorio.
 - Sub-estados como *Revisar caso* o *Stand by* se guardan como etiqueta
   aparte, no alteran el estado principal.
+
+## Reports
+
+El informe usa toda la cartera del BDM seleccionado, con un selector propio
+independiente de los filtros del dashboard. El funnel muestra la distribución
+actual, incluyendo ganadas, perdidas y sin clasificar; no calcula conversiones
+históricas. El ranking prioriza las cinco propuestas abiertas de mayor AOV
+positivo, incluidas las ofertas enviadas.
+
+Las alertas incluyen propuestas abiertas con al menos 30 días sin cambiar de
+etapa. El umbral puede cambiarse a 14, 60 o 90 días. Se utiliza la última
+transición registrada, compatible con el histórico anterior; las nuevas
+transiciones guardan también origen y destino de forma estructurada. Las notas
+y cambios de importe no reinician el contador. Sin transiciones, se estima
+la antigüedad desde la inclusión o el alta y se etiqueta como estimada. Las
+fechas ausentes, inválidas, futuras o los históricos inconsistentes se muestran
+como antigüedad sin determinar. Las alertas indican permanencia en etapa,
+no ausencia de actividad comercial.
+
+El informe solo utiliza los datos reales que se carguen en la aplicación;
+no incluye datos ficticios ni de demostración.
 
 ## Seguridad y robustez
 

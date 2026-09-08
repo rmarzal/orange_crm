@@ -261,6 +261,29 @@
   .cloudbar.min{padding:5px 12px;font-size:12px;opacity:.6;box-shadow:none;transition:opacity .2s} .cloudbar.min:hover{opacity:1} .cloudbar.min .cb-dot{background:var(--good)} .cloudbar.min button{padding:4px 10px;font-size:12px}
   .cloudbar button{padding:6px 12px;font-size:12.5px}
   .help{max-width:820px} .help h3{font-size:15px;margin:20px 0 5px;color:var(--ink)} .help ul,.help ol{margin:4px 0;padding-left:22px} .help li{margin:4px 0;font-size:13.5px;color:var(--ink-2)} .help p{font-size:13.5px;color:var(--ink-2)}
+  .report{max-width:none}
+  .rep-link{appearance:none;border:0;padding:0;background:none;color:var(--accent-ink);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+  .rep-link:hover{text-decoration:underline}
+  .rep-link:focus-visible,.rep-stage summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .rep-age{font-size:12px;color:var(--ink-2);margin-top:4px}
+  .is-stale{color:var(--warn)}
+  .rep-matrix td span,.rep-matrix td small{display:block;font-size:12px}
+  .rep-matrix tbody tr{cursor:default}
+  .rep-matrix tfoot{font-weight:700;background:var(--surface-2)}
+  .rep-stage{border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+  .rep-stage summary{cursor:pointer;padding:12px;font-size:13px;font-weight:700;background:var(--surface-2)}
+  .rep-stage summary span{font-weight:400;color:var(--ink-2);margin-left:8px}
+  .rep-stage>div{padding:0 12px}
+  .rep-opp .ro-desc,.rep-opp .ro-meta,.rep-link{overflow-wrap:anywhere}
+  @media(max-width:640px){.report{padding:16px 12px}.rep-metrics{grid-template-columns:1fr}.rep-opp .ro-head{flex-wrap:wrap}.rep-stage summary span{display:block;margin-left:0}}
+  @media print{
+    body{background:white;color:black}.wrap{max-width:none;padding:0}
+    header.top,nav.tabs,.wrap>.note,.cloudbar,.foot,.rep-toolbar,#reports>p,.backdrop,.notice{display:none!important}
+    .report{padding:0;border:0;box-shadow:none}.report,.rep-metric,.rep-stage summary,table,th{background:white;color:black}
+    .rep-matrix{font-size:9px}.rep-matrix th,.rep-matrix td{padding:5px;white-space:normal}.rep-matrix td span,.rep-matrix td small{font-size:9px}
+    .twrap{overflow:visible;box-shadow:none}.rep-opp,.rep-metric{break-inside:avoid}.rep-link{color:black}
+    .rep-section h3,.rep-stage summary{break-after:avoid}
+  }
 </style>
 
 <div class="wrap">
@@ -281,8 +304,7 @@
     <button role="tab" aria-selected="true" data-tab="dash">Embudo & Dashboard</button>
     <button role="tab" aria-selected="false" data-tab="board">Tablero</button>
     <button role="tab" aria-selected="false" data-tab="dups">Revisión</button>
-    <!-- Reports oculto temporalmente (no necesario de momento) -->
-    <!-- <button role="tab" aria-selected="false" data-tab="reports">Reports</button> -->
+    <button role="tab" aria-selected="false" data-tab="reports">Reports</button>
     <button role="tab" aria-selected="false" data-tab="form">Nueva oportunidad</button>
     <button role="tab" aria-selected="false" data-tab="table">Registros</button>
     <button role="tab" aria-selected="false" data-tab="help">Ayuda</button>
@@ -349,9 +371,11 @@
   <!-- REPORTS -->
   <section class="panel" id="reports">
     <div class="rep-toolbar">
-      <div class="f"><label>Informe de BDM</label><select id="rep-bdm"></select></div>
+      <div class="f"><label for="rep-bdm">Informe de BDM</label><select id="rep-bdm"></select></div>
+      <div class="f"><label for="rep-days">Sin avanzar desde</label><select id="rep-days"><option value="14">14 días</option><option value="30" selected>30 días</option><option value="60">60 días</option><option value="90">90 días</option></select></div>
       <button class="reset" id="rep-print">🖨 Imprimir / PDF</button>
     </div>
+    <p class="hint">Reports utiliza toda la cartera del BDM seleccionado, independientemente de los filtros de otras pestañas.</p>
     <div id="report"></div>
   </section>
 
@@ -494,6 +518,7 @@
       <h3>Pestañas</h3>
       <ul>
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
+        <li><b>Reports:</b> funnel por BDM con número e importe por etapa, top 5 de propuestas abiertas y alertas de permanencia (14, 30, 60 o 90 días). Usa su propio selector de BDM. Las fechas estimadas y desconocidas se indican por separado. Permite abrir fichas e imprimir el informe completo.</li>
         <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
         <li><b>Revisión:</b> duplicados, sin clasificar, casos marcados con 🚩 para revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
@@ -816,7 +841,7 @@ state.semestre="";state.dateFrom="";state.dateTo="";
 function myBdm(){const me=normKey(localStorage.getItem("cloud_user")||"");if(!me)return"";
   const hit=[...new Set(DATA.map(d=>d.bdm))].find(b=>b&&normKey(b)===me||b&&me.startsWith(normKey(b)));return hit||"";}
 state.bdm=myBdm();
-let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm=state.bdm||"Rubén";
+let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm="",repDays=30;
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
 function buildFilters(container){
@@ -878,7 +903,7 @@ function filtered(){return DATA.filter(d=>{
   return true;
 });}
 
-function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderRevisar(rows);renderTrash();/*renderReport();*/document.getElementById('rec-count').textContent=DATA.length;save();}
+function render(){const rows=filtered();renderKpis(rows);renderFunnel(rows);renderBreakdown(rows);renderTable(rows);renderBoard(rows);renderDups(rows);renderUncls(rows);renderRevisar(rows);renderTrash();renderReport();document.getElementById('rec-count').textContent=DATA.length;save();}
 
 function renderKpis(rows){
   const open=rows.filter(d=>OPEN_STAGES.includes(d.estado)),pipeVal=open.reduce((s,d)=>s+d.aov,0);
@@ -1030,58 +1055,90 @@ function restoreTrash(i){
   DATA.push(opp);TRASH.splice(i,1);saveTrash();buildAllFilters();render();uiNotice("Oportunidad restaurada");
 }
 
-/* ---- pestaña Reports: informe automático por BDM ---- */
-function repDesc(d){const t=d.desc?(d.desc.length>220?d.desc.slice(0,220)+"…":d.desc):"";return t?escHtml(t):'<span style="color:var(--ink-3)">Sin descripción registrada</span>';}
-function repOpp(d){return `<div class="rep-opp"><div class="ro-head"><span class="ro-cli">${escHtml(d.cliente)}</span><span class="ro-val">${d.aov?eur(d.aov):"—"}</span></div><div class="ro-meta">${escHtml(d.tipologia)} · ${escHtml(d.estado)} · ${escHtml(d.region)}${d.apertura?" · "+d.apertura:""}${d.motivo_ko?" · Motivo KO: "+escHtml(d.motivo_ko):""}</div><div class="ro-desc">${repDesc(d)}</div></div>`;}
-function repSection(title,list,emptyMsg){return `<div class="rep-section"><h3>${title}</h3>${list.length?list.map(repOpp).join(""):`<div class="rep-empty">${emptyMsg}</div>`}</div>`;}
-function populateRep(){const sel=document.getElementById("rep-bdm");if(!sel)return;const opts=uniq("bdm");if(!opts.includes(repBdm))repBdm=opts.includes("Rubén")?"Rubén":(opts[0]||"");sel.innerHTML=opts.map(o=>`<option${o===repBdm?" selected":""}>${escHtml(o)}</option>`).join("");}
-function renderReport(){
-  const host=document.getElementById("report");if(!host)return;
-  const bdm=repBdm;const rows=DATA.filter(d=>d.bdm===bdm);
-  if(!rows.length){host.innerHTML=`<div class="report"><p class="rep-empty">Sin oportunidades para ${escHtml(bdm)}.</p></div>`;return;}
-  const sum=(a)=>a.reduce((s,d)=>s+d.aov,0);
-  const open=rows.filter(d=>OPEN_STAGES.includes(d.estado));
-  const offers=rows.filter(d=>d.estado==="Oferta enviada").sort((a,b)=>b.aov-a.aov);
-  const won=rows.filter(d=>d.estado==="Ganada").sort((a,b)=>b.aov-a.aov);
-  const ko=rows.filter(d=>d.estado==="Perdida / KO").sort((a,b)=>b.aov-a.aov);
-  const decided=won.length+ko.length,wr=decided?Math.round(won.length/decided*100):0;
-  const koPct=Math.round(ko.length/rows.length*100),datePct=Math.round(rows.filter(d=>d.apertura).length/rows.length*100);
-  // medias equipo
-  const tW=DATA.filter(d=>d.estado==="Ganada").length,tK=DATA.filter(d=>d.estado==="Perdida / KO").length;
-  const teamWr=(tW+tK)?Math.round(tW/(tW+tK)*100):0;
-  const teamDate=DATA.length?Math.round(DATA.filter(d=>d.apertura).length/DATA.length*100):0;
-  // duplicados del bdm
-  const grp={};rows.forEach(d=>{if(d.estado==="Perdida / KO")return;const k=normKey(d.cliente);if(k&&k!=="—")(grp[k]=grp[k]||[]).push(d);});
-  const dupG=Object.values(grp).filter(g=>g.length>1);const dupAff=dupG.reduce((s,g)=>s+g.length,0);
-  const topOpen=open.filter(d=>d.estado!=="Oferta enviada").sort((a,b)=>b.aov-a.aov).slice(0,5);
-  // narrativa
-  const P=[];
-  P.push(`<b>${escHtml(bdm)}</b> gestiona <b>${rows.length}</b> oportunidades: ${open.length} abiertas (${eur(sum(open))} en pipeline), ${won.length} ganadas (${eur(sum(won))}) y ${ko.length} perdidas.`);
-  P.push(`Su tasa de conversión es del <b>${wr}%</b>, ${wr>=teamWr?"por encima de":wr===teamWr?"en línea con":"por debajo de"} la media del equipo (${teamWr}%).`);
-  if(datePct>=teamDate+15)P.push(`Destaca en <b>disciplina de datos</b>: el ${datePct}% de sus oportunidades tienen fecha de apertura registrada, muy por encima de la media (${teamDate}%).`);
-  if(koPct>=40)P.push(`⚠️ El <b>${koPct}%</b> de su cartera está en pérdida; conviene revisar la cualificación de entrada para no inflar el ratio de KO.`);
-  if(offers.length)P.push(`Tiene <b>${offers.length}</b> oferta(s) enviada(s) por ${eur(sum(offers))} — su principal palanca de cierre a corto plazo.`);
-  if(dupG.length)P.push(`Hay <b>${dupG.length}</b> clientes duplicados (${dupAff} oportunidades) pendientes de consolidar, que pueden estar distorsionando sus métricas.`);
-  const html=`<div class="report">
-    <h2>Informe comercial — ${escHtml(bdm)}</h2>
-    <p class="rep-sub">Generado el ${today()} · a partir de los datos actuales del pipeline</p>
-    <div class="rep-metrics">
-      <div class="rep-metric"><div class="rm-lbl">Oportunidades</div><div class="rm-val">${rows.length}</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Pipeline abierto</div><div class="rm-val">${eur(sum(open))}</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Ganado</div><div class="rm-val">${eur(sum(won))}</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Win rate</div><div class="rm-val">${wr}%</div></div>
-      <div class="rep-metric"><div class="rm-lbl">En KO</div><div class="rm-val">${ko.length} · ${koPct}%</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Duplicados</div><div class="rm-val">${dupG.length}</div></div>
-    </div>
-    <div class="rep-narr">${P.map(p=>`<p>${p}</p>`).join("")}</div>
-    ${repSection("🎯 Prioridad de cierre · ofertas enviadas",offers.slice(0,8),"No hay ofertas enviadas pendientes.")}
-    ${repSection("💼 Mayor valor en curso (sin ofertas)",topOpen,"Sin oportunidades abiertas fuera de ofertas.")}
-    ${repSection("🏆 Ganadas",won.slice(0,6),"Aún sin oportunidades ganadas.")}
-    ${repSection("📉 Pérdidas destacadas",ko.slice(0,5),"Sin pérdidas registradas.")}
-    ${dupG.length?`<div class="rep-section"><h3>♻️ Duplicados a resolver</h3>${dupG.sort((a,b)=>b.length-a.length).map(g=>`<div class="rep-opp"><div class="ro-head"><span class="ro-cli">${escHtml(g[0].cliente)} <span class="kc-dup">⚠ ×${g.length}</span></span><span class="ro-val">${eur(sum(g))}</span></div><div class="ro-meta">${g.map(d=>d.estado).join(" · ")}</div></div>`).join("")}</div>`:""}
-  </div>`;
-  host.innerHTML=html;
+/* ---- Reports: cartera por BDM, valor y permanencia en etapa ---- */
+const REPORT_STAGES=[...ALL_STAGES,"Sin clasificar"];
+const repMoney=n=>new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n);
+const repValue=d=>Number.isFinite(d.aov)?d.aov:0;
+const repSum=rows=>rows.reduce((sum,d)=>sum+repValue(d),0);
+const repOwner=d=>clean(d.bdm,"Sin asignar");
+// Comparar días de calendario evita desfases por hora y cambios de horario.
+function repDay(value){
+  if(typeof value!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;
+  const time=Date.parse(value+"T00:00:00Z");
+  return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value?time/86400000:null;
 }
+function repToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function repAge(d,asOf=repToday()){
+  const now=repDay(asOf);if(now===null)return {days:null,date:"",estimated:false};
+  const history=Array.isArray(d.history)?d.history:[];
+  // Compatibilidad con históricos antiguos y nuevos eventos estructurados.
+  const changes=history.filter(h=>h&&(h.type==="stage_change"||/^Estado: .+ → .+/.test(String(h.t||""))));
+  if(changes.length){
+    const dated=changes.map(h=>({h,day:repDay(h.d)}));
+    // Una transición sin fecha impide conocer con fiabilidad la entrada actual.
+    if(dated.some(x=>x.day===null||x.day>now))return {days:null,date:"",estimated:false};
+    const latest=dated.reduce((a,b)=>b.day>=a.day?b:a);
+    const matches=latest.h.type==="stage_change"?latest.h.to===d.estado:
+      String(latest.h.t).split(" → ")[1]?.split(" · ")[0].split(" (")[0]===d.estado;
+    return matches?{days:now-latest.day,date:latest.h.d,estimated:false}:{days:null,date:"",estimated:false};
+  }
+  const opened=repDay(d.apertura);
+  if(opened!==null&&opened<=now)return {days:now-opened,date:d.apertura,estimated:true};
+  const created=history.find(h=>h&&/^Creada(?:$|[ (·])/.test(String(h.t||""))&&repDay(h.d)!==null&&repDay(h.d)<=now);
+  return created?{days:now-repDay(created.d),date:created.d,estimated:true}:{days:null,date:"",estimated:false};
+}
+function reportData(rows,threshold=repDays,asOf=repToday()){
+  const open=rows.filter(d=>OPEN_STAGES.includes(d.estado));
+  const aged=open.map(d=>({d,...repAge(d,asOf)}));
+  return {open,stale:aged.filter(x=>x.days!==null&&x.days>=threshold).sort((a,b)=>b.days-a.days||repValue(b.d)-repValue(a.d)),
+    unknown:aged.filter(x=>x.days===null).map(x=>x.d),
+    top:open.filter(d=>repValue(d)>0).sort((a,b)=>repValue(b)-repValue(a)||a.id-b.id).slice(0,5)};
+}
+function populateRep(){
+  const sel=document.getElementById("rep-bdm"),opts=[...new Set(DATA.map(repOwner))].sort((a,b)=>a.localeCompare(b,"es"));
+  if(repBdm&&!opts.includes(repBdm))repBdm="";
+  sel.innerHTML='<option value="">Todo el equipo</option>'+opts.map(o=>`<option value="${escHtml(o)}"${o===repBdm?" selected":""}>${escHtml(o)}</option>`).join("");
+}
+function repOpp(d,age){
+  const aging=age||(OPEN_STAGES.includes(d.estado)?repAge(d):null);
+  const ageText=aging?(aging.days===null?'Antigüedad sin determinar':`${aging.days} días en etapa${aging.estimated?" · estimados desde inclusión/alta":" · desde "+aging.date}`):"";
+  return `<div class="rep-opp"><div class="ro-head"><button class="rep-link" data-report-id="${d.id}">${escHtml(d.cliente)}</button><span class="ro-val">${repValue(d)?repMoney(repValue(d)):"Sin importe"}</span></div>
+    <div class="ro-meta">${escHtml(repOwner(d))} · ${escHtml(d.estado)} · ${escHtml(d.tipologia)} · ${escHtml(d.region)}${d.opp?" · Ref. "+escHtml(d.opp):""}</div>
+    ${ageText?`<div class="rep-age${aging.days!==null&&aging.days>=repDays?" is-stale":""}">${escHtml(ageText)}</div>`:""}
+    <div class="ro-desc">${escHtml(d.desc||"Sin descripción registrada")}</div>
+    ${d.motivo_ko?`<div class="ro-meta">Motivo KO: ${escHtml(d.motivo_ko)}</div>`:""}</div>`;
+}
+function repSection(title,content,emptyMsg){return `<section class="rep-section"><h3>${escHtml(title)}</h3>${content||`<p class="rep-empty">${escHtml(emptyMsg)}</p>`}</section>`;}
+function renderReport(){
+  const host=document.getElementById("report"),rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
+  const {open,stale,unknown,top}=reportData(rows),staleIds=new Set(stale.map(x=>x.d.id));
+  const owners=[...new Set(rows.map(repOwner))].sort((a,b)=>a.localeCompare(b,"es"));
+  const cell=list=>`<b>${list.length}</b><span>${repMoney(repSum(list))}</span>${list.some(d=>staleIds.has(d.id))?`<small class="is-stale">${list.filter(d=>staleIds.has(d.id)).length} sin avanzar</small>`:""}`;
+  host.innerHTML=`<div class="report"><h2>Informe comercial · ${escHtml(repBdm||"Todo el equipo")}</h2>
+    <p class="rep-sub">${repToday()} · Importes AOV · Situación actual de la cartera</p>
+    <div class="rep-metrics">
+      <div class="rep-metric"><div class="rm-lbl">Propuestas abiertas</div><div class="rm-val">${open.length}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Pipeline abierto</div><div class="rm-val">${repMoney(repSum(open))}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Sin avanzar ≥ ${repDays} días</div><div class="rm-val is-stale">${stale.length}</div><div class="ro-meta">${repMoney(repSum(stale.map(x=>x.d)))}</div></div>
+    </div>
+    ${!rows.length?'<p class="rep-empty">No hay propuestas para este informe. Carga tus datos desde Registros o crea una nueva oportunidad.</p>':`
+    <section class="rep-section"><h3>Funnel por BDM</h3><p class="hint">Número e importe en cada etapa actual; no son conversiones acumuladas. El total incluye ganadas, perdidas y sin clasificar.</p>
+    <div class="twrap" tabindex="0" role="region" aria-label="Funnel por BDM; desplázate horizontalmente para ver todas las etapas"><table class="rep-matrix"><thead><tr><th scope="col">BDM</th>${REPORT_STAGES.map(s=>`<th scope="col">${escHtml(s)}</th>`).join("")}<th scope="col">Total cartera</th></tr></thead>
+    <tbody>${owners.map(owner=>{const owned=rows.filter(d=>repOwner(d)===owner);return `<tr><th scope="row">${escHtml(owner)}</th>${REPORT_STAGES.map(s=>`<td>${cell(owned.filter(d=>d.estado===s))}</td>`).join("")}<td>${cell(owned)}</td></tr>`;}).join("")}</tbody>
+    <tfoot><tr><th scope="row">Total</th>${REPORT_STAGES.map(s=>`<td>${cell(rows.filter(d=>d.estado===s))}</td>`).join("")}<td>${cell(rows)}</td></tr></tfoot></table></div></section>
+    ${repSection("Top 5 · propuestas abiertas de mayor importe",top.map(d=>repOpp(d)).join(""),"No hay propuestas abiertas con importe positivo.")}
+    <div class="note">Señalamos las propuestas abiertas con <b>${repDays} días o más sin cambiar de etapa</b>. Las notas y cambios de importe no reinician el contador. Sin transiciones registradas, se estima desde la inclusión o el alta; no demuestra falta de actividad comercial. Ganadas y perdidas quedan fuera de las alertas.</div>
+    ${repSection("Propuestas sin avanzar",stale.map(x=>repOpp(x.d,x)).join(""),"No hay propuestas que superen el umbral seleccionado.")}
+    ${repSection("Antigüedad sin determinar",unknown.map(d=>repOpp(d)).join(""),"Todas las propuestas abiertas tienen una fecha de referencia válida.")}
+    <section class="rep-section"><h3>Detalle de propuestas por etapa</h3><p class="hint">Despliega cada etapa. Pulsa un cliente para abrir su ficha. Propuestas ordenadas por importe.</p>
+    ${REPORT_STAGES.map(stage=>{const items=rows.filter(d=>d.estado===stage).sort((a,b)=>repValue(b)-repValue(a));return `<details class="rep-stage"><summary>${escHtml(stage)} <span>${items.length} propuestas · ${repMoney(repSum(items))}</span></summary><div>${items.map(d=>repOpp(d)).join("")||'<p class="rep-empty">Sin propuestas en esta etapa.</p>'}</div></details>`;}).join("")}</section>`}
+  </div>`;
+}
+document.getElementById("report").addEventListener("click",e=>{const b=e.target.closest("[data-report-id]");if(b)openEdit(Number(b.dataset.reportId));});
+window.addEventListener("beforeprint",()=>{if(document.getElementById("reports").classList.contains("active")){
+  document.querySelectorAll(".rep-stage").forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});
+}});
+window.addEventListener("afterprint",()=>document.querySelectorAll(".rep-stage[data-was-open]").forEach(d=>{d.open=d.dataset.wasOpen==="true";delete d.dataset.wasOpen;}));
 
 /* arrastrar tarjetas entre columnas -> cambia estado + histórico */
 function changeStage(id,newStage){
@@ -1095,7 +1152,7 @@ function applyStage(d,newStage,motivo,via){
   const prev={estado:d.estado,aov:d.aov,motivo_ko:d.motivo_ko,revisar:d.revisar,histLen:d.history.length};
   let extra="";
   if(newStage==="Perdida / KO"&&!d.aov){d.aov=KO_DEFAULT_AOV;extra=` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`;}
-  d.history.push({d:today(),t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
+  d.history.push({d:today(),type:"stage_change",from:d.estado,to:newStage,t:`Estado: ${d.estado} → ${newStage}${motivo?` · Motivo: ${motivo}`:""}${extra}${via?` (${via})`:""}`});
   d.estado=newStage;if(newStage==="Perdida / KO")d.motivo_ko=motivo||d.motivo_ko||"";
   buildAllFilters();render();
   const undo=()=>{d.estado=prev.estado;d.aov=prev.aov;d.motivo_ko=prev.motivo_ko;d.revisar=prev.revisar;
@@ -1185,7 +1242,7 @@ document.getElementById("m-save").addEventListener("click",()=>{
   let priceDefault=false;
   if(nEstado==="Perdida / KO"&&!nAov){nAov=KO_DEFAULT_AOV;priceDefault=true;}
   d.history=d.history||[];
-  if(nEstado!==d.estado)d.history.push({d:today(),t:`Estado: ${d.estado} → ${nEstado}${nMotivo?` · Motivo: ${nMotivo}`:""}${priceDefault?` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`:""}`});
+  if(nEstado!==d.estado)d.history.push({d:today(),type:"stage_change",from:d.estado,to:nEstado,t:`Estado: ${d.estado} → ${nEstado}${nMotivo?` · Motivo: ${nMotivo}`:""}${priceDefault?` · Precio por defecto ${eur(KO_DEFAULT_AOV)}`:""}`});
   else if(nMotivo&&nMotivo!==d.motivo_ko)d.history.push({d:today(),t:`Motivo KO: ${nMotivo}`});
   if(nAov!==d.aov&&!priceDefault)d.history.push({d:today(),t:`AOV: ${d.aov?eur(d.aov):"0"} → ${nAov?eur(nAov):"0"}`});
   if(nApertura!==d.apertura)d.history.push({d:today(),t:`Fecha de inclusión: ${d.apertura||"—"} → ${nApertura||"—"}`});
@@ -1224,6 +1281,7 @@ function activateTab(b){
   b.setAttribute('aria-selected','true');b.tabIndex=0;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById(b.dataset.tab).classList.add('active');
+  if(b.dataset.tab==='reports')renderReport();
 }
 document.querySelectorAll('nav.tabs button').forEach((b,i,all)=>{
   b.tabIndex=b.getAttribute('aria-selected')==='true'?0:-1;
@@ -1593,6 +1651,7 @@ async function cloudInit(){
 }
 function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));buildFilters(document.getElementById('filters4'));fillFormSelects();populateRep();}
 document.getElementById('rep-bdm').addEventListener('change',e=>{repBdm=e.target.value;renderReport();});
+document.getElementById('rep-days').addEventListener('change',e=>{repDays=Number(e.target.value);renderReport();});
 document.getElementById('rep-print').addEventListener('click',()=>window.print());
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});
