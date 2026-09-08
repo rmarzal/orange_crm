@@ -373,9 +373,11 @@
     <div class="rep-toolbar">
       <div class="f"><label for="rep-bdm">Informe de BDM</label><select id="rep-bdm"></select></div>
       <div class="f"><label for="rep-days">Sin avanzar desde</label><select id="rep-days"><option value="14">14 días</option><option value="30" selected>30 días</option><option value="60">60 días</option><option value="90">90 días</option></select></div>
+      <button class="btn" id="rep-download">Descargar informe editable</button>
+      <button class="reset" id="rep-csv">Descargar CSV para Excel</button>
       <button class="reset" id="rep-print">🖨 Imprimir / PDF</button>
     </div>
-    <p class="hint">Reports utiliza toda la cartera del BDM seleccionado, independientemente de los filtros de otras pestañas.</p>
+    <p class="hint">Reports utiliza toda la cartera del BDM seleccionado. Edita las propuestas pulsando el cliente en el informe. Descarga una copia HTML editable o los datos en CSV para Excel; los cambios en las copias descargadas no se sincronizan con el CRM.</p>
     <div id="report"></div>
   </section>
 
@@ -1134,6 +1136,86 @@ function renderReport(){
     ${REPORT_STAGES.map(stage=>{const items=rows.filter(d=>d.estado===stage).sort((a,b)=>repValue(b)-repValue(a));return `<details class="rep-stage"><summary>${escHtml(stage)} <span>${items.length} propuestas · ${repMoney(repSum(items))}</span></summary><div>${items.map(d=>repOpp(d)).join("")||'<p class="rep-empty">Sin propuestas en esta etapa.</p>'}</div></details>`;}).join("")}</section>`}
   </div>`;
 }
+// Descargas locales: solo la cartera seleccionada y los datos presentes en el CRM.
+function repFilename(extension){
+  const owner=normKey(repBdm||"equipo").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"bdm";
+  return `informe-${owner}-${repToday()}.${extension}`;
+}
+function repDownload(content,type,filename){
+  const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement("a");
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function repEditableHtml(){
+  renderReport();
+  const doc=document.implementation.createHTMLDocument("Informe comercial · "+(repBdm||"Todo el equipo"));
+  doc.documentElement.lang="es";doc.documentElement.dataset.theme="light";
+  const charset=doc.createElement("meta");charset.setAttribute("charset","utf-8");doc.head.prepend(charset);
+  const viewport=doc.createElement("meta");viewport.name="viewport";viewport.content="width=device-width, initial-scale=1";doc.head.appendChild(viewport);
+  const style=doc.createElement("style");
+  style.textContent=document.querySelector("style").textContent+`
+    .export-tools{position:sticky;top:0;z-index:2;background:var(--bg);padding:12px 0}
+    .export-tools p{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+    .report[contenteditable]:focus{outline:2px solid var(--accent);outline-offset:4px}
+    @media print{.export-tools{display:none}.report[contenteditable]:focus{outline:none}}
+  `;doc.head.appendChild(style);
+  const wrap=doc.createElement("main");wrap.className="wrap";
+  const toolbar=doc.createElement("div");toolbar.className="export-tools";
+  toolbar.innerHTML='<button class="btn" id="save-report">Guardar copia editada</button> <button class="reset" id="print-report">Imprimir / PDF</button><p>Pulsa sobre el informe para editar textos, cifras o añadir comentarios. Guarda una nueva copia para conservar tus cambios. Esta copia no sincroniza cambios con el CRM ni recalcula los totales.</p><p id="edit-status" role="status">Copia editable lista.</p>';
+  wrap.appendChild(toolbar);
+  const report=document.getElementById("report").firstElementChild.cloneNode(true);
+  report.querySelectorAll("[data-report-id]").forEach(button=>{
+    const name=doc.createElement("span");name.className="ro-cli";name.textContent=button.textContent;button.replaceWith(name);
+  });
+  // Todas las etapas quedan visibles y editables, también en impresión.
+  report.querySelectorAll("details").forEach(details=>{
+    const section=doc.createElement("section");section.className="rep-stage";
+    const heading=doc.createElement("h3");heading.textContent=details.querySelector("summary").textContent;
+    section.append(heading,details.querySelector("div"));details.replaceWith(section);
+  });
+  report.querySelectorAll(".hint").forEach(hint=>{
+    if(hint.textContent.includes("Pulsa un cliente"))hint.textContent="Detalle completo por etapa. Puedes editar el contenido de esta copia.";
+  });
+  const empty=report.querySelector(".rep-empty");
+  if(empty?.textContent.includes("Carga tus datos desde Registros"))empty.textContent="No hay propuestas para este informe. Para incluir tu cartera real, carga los datos en el CRM y descarga el informe de nuevo.";
+  report.id="editable-report";report.setAttribute("contenteditable","true");report.setAttribute("aria-label","Contenido editable del informe");report.spellcheck=true;
+  wrap.appendChild(report);doc.body.appendChild(wrap);
+  const script=doc.createElement("script");
+  script.textContent=`
+    let dirty=false;
+    const report=document.getElementById("editable-report"),status=document.getElementById("edit-status");
+    report.addEventListener("input",()=>{dirty=true;status.textContent="Cambios pendientes de guardar.";});
+    document.getElementById("print-report").addEventListener("click",()=>window.print());
+    document.getElementById("save-report").addEventListener("click",()=>{
+      status.textContent="Copia editable lista.";
+      const html="<!doctype html>"+document.documentElement.outerHTML;
+      const url=URL.createObjectURL(new Blob([html],{type:"text/html;charset=utf-8"}));
+      const a=document.createElement("a");a.href=url;a.download=${JSON.stringify(repFilename("html"))};
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      dirty=false;status.textContent="Copia descargada con tus cambios.";
+    });
+    window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+  `;
+  doc.body.appendChild(script);
+  return "<!doctype html>\n"+doc.documentElement.outerHTML;
+}
+function repCsv(){
+  const rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
+  const columns=["Cliente","Referencia","BDM","Territorio","KAM","Tipología","Estado","Importe AOV (EUR)","Descripción","Inclusión","Cierre","Días en etapa","Fecha de referencia","Origen de antigüedad","Sin avanzar","Umbral (días)","Fecha del informe"];
+  // Los textos que Excel podría interpretar como fórmulas se exportan como texto.
+  const cell=value=>{
+    let text=String(value??"");
+    if(typeof value!=="number"&&/^[\s]*[=+@-]/.test(text))text="'"+text;
+    return '"'+text.replace(/"/g,'""')+'"';
+  };
+  const lines=rows.map(d=>{
+    const open=OPEN_STAGES.includes(d.estado),age=open?repAge(d):null;
+    return [d.cliente,d.opp,repOwner(d),d.region,d.kam,d.tipologia,d.estado,repValue(d),d.desc,d.apertura,d.cierre,
+      age?.days??"",age?.date||"",!open?"No aplica":age.days===null?"Sin determinar":age.estimated?"Estimada desde inclusión/alta":"Cambio de etapa",
+      !open?"No aplica":age.days===null?"Sin determinar":age.days>=repDays?"Sí":"No",repDays,repToday()].map(cell).join(";");
+  });
+  return "\uFEFF"+[columns.map(cell).join(";"),...lines].join("\r\n");
+}
 document.getElementById("report").addEventListener("click",e=>{const b=e.target.closest("[data-report-id]");if(b)openEdit(Number(b.dataset.reportId));});
 window.addEventListener("beforeprint",()=>{if(document.getElementById("reports").classList.contains("active")){
   document.querySelectorAll(".rep-stage").forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});
@@ -1652,6 +1734,8 @@ async function cloudInit(){
 function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));buildFilters(document.getElementById('filters4'));fillFormSelects();populateRep();}
 document.getElementById('rep-bdm').addEventListener('change',e=>{repBdm=e.target.value;renderReport();});
 document.getElementById('rep-days').addEventListener('change',e=>{repDays=Number(e.target.value);renderReport();});
+document.getElementById('rep-download').addEventListener('click',()=>repDownload(repEditableHtml(),'text/html;charset=utf-8',repFilename('html')));
+document.getElementById('rep-csv').addEventListener('click',()=>repDownload(repCsv(),'text/csv;charset=utf-8',repFilename('csv')));
 document.getElementById('rep-print').addEventListener('click',()=>window.print());
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});

@@ -73,6 +73,15 @@ fechas ausentes, inválidas, futuras o los históricos inconsistentes se muestra
 como antigüedad sin determinar. Las alertas indican permanencia en etapa,
 no ausencia de actividad comercial.
 
+Puedes editar las propuestas abriendo su ficha desde el nombre del cliente.
+**Descargar informe editable** genera una copia HTML autónoma: ábrela en el
+navegador, pulsa sobre el contenido para editarlo y usa **Guardar copia editada**
+para descargar tus cambios. Incluye todo el detalle por etapa. Esta edición es
+una copia del informe: no modifica el CRM ni recalcula totales.
+**Descargar CSV para Excel** exporta las propuestas del BDM seleccionado,
+con importes numéricos, antigüedad, origen de la fecha y alertas. Ambas descargas
+funcionan localmente, sin dependencias ni conexión. Se mantiene **Imprimir / PDF**.
+
 El informe solo utiliza los datos reales que se carguen en la aplicación;
 no incluye datos ficticios ni de demostración.
 
