@@ -30,9 +30,9 @@ pública: es un fichero que se reparte y se abre en local.
 
 - **Embudo & Dashboard**: KPIs (abiertas, valor de pipeline, ganadas,
   perdidas, win rate) y embudo de conversión por nº o por €.
-- **Reports**: funnel por BDM (o todo el equipo), número e importe por
-  etapa, top 5 de propuestas abiertas por AOV, alertas de propuestas sin
-  avanzar y detalle desplegable con acceso a cada ficha. Incluye impresión/PDF.
+- **Reports**: informe sencillo por BDM, número e importe por etapa y las
+  cinco propuestas de mayor importe. El texto y las propuestas se pueden
+  editar o quitar del informe. Incluye descarga DOCX y guardado como PDF.
 - **Tablero Kanban**: arrastrar y soltar entre etapas (queda en el
   histórico) y botón para duplicar una oportunidad.
 - **Revisión**: clientes duplicados, oportunidades sin clasificar, casos
@@ -66,13 +66,10 @@ Las nuevas transiciones guardan origen y destino de forma estructurada. El
 detalle de cada propuesta permite abrir su ficha para editarla.
 
 Puedes editar las propuestas abriendo su ficha desde el nombre del cliente.
-**Descargar informe editable** genera una copia HTML autónoma: ábrela en el
-navegador, pulsa sobre el contenido para editarlo y usa **Guardar copia editada**
-para descargar tus cambios. Incluye todo el detalle por etapa. Esta edición es
-una copia del informe: no modifica el CRM ni recalcula totales.
-**Descargar CSV para Excel** exporta las propuestas del BDM seleccionado,
-con importes numéricos, antigüedad, origen de la fecha y alertas. Ambas descargas
-funcionan localmente, sin dependencias ni conexión. Se mantiene **Imprimir / PDF**.
+**Descargar Word** genera un documento DOCX editable con el
+informe visible y sus cinco propuestas. **Descargar PDF** abre el diálogo de
+impresión del navegador para guardarlo como PDF, conservando el estilo visual.
+Ambas opciones funcionan localmente, sin dependencias ni conexión.
 
 El informe solo utiliza los datos reales que se carguen en la aplicación;
 no incluye datos ficticios ni de demostración.
