@@ -201,8 +201,8 @@
   .rep-narr p{margin:0 0 8px}.rep-narr p:last-child{margin:0}
   .rep-section{margin-bottom:22px}
   .rep-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-3);margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px}
-  .rep-opp{padding:9px 0;border-bottom:1px dashed var(--border)}
-  .rep-opp:last-child{border-bottom:0}
+  .rep-opp{padding:12px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-bottom:9px}
+  .rep-opp:last-child{margin-bottom:0}
   .rep-opp .ro-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
   .rep-opp .ro-cli{font-weight:700;font-size:14px}
   .rep-opp .ro-val{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -261,7 +261,14 @@
   .cloudbar.min{padding:5px 12px;font-size:12px;opacity:.6;box-shadow:none;transition:opacity .2s} .cloudbar.min:hover{opacity:1} .cloudbar.min .cb-dot{background:var(--good)} .cloudbar.min button{padding:4px 10px;font-size:12px}
   .cloudbar button{padding:6px 12px;font-size:12.5px}
   .help{max-width:820px} .help h3{font-size:15px;margin:20px 0 5px;color:var(--ink)} .help ul,.help ol{margin:4px 0;padding-left:22px} .help li{margin:4px 0;font-size:13.5px;color:var(--ink-2)} .help p{font-size:13.5px;color:var(--ink-2)}
-  .report{max-width:none}
+  .report{max-width:none;padding:22px 24px}
+  .report[contenteditable="true"]{outline:0}
+  .report[contenteditable="true"]:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
+  .rep-top-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rep-top-list .rep-opp{margin:0}
+  .rep-remove{appearance:none;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:7px;padding:4px 8px;font:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .rep-remove:hover{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+  @media(max-width:760px){.rep-top-list{grid-template-columns:1fr}}
   .rep-link{appearance:none;border:0;padding:0;background:none;color:var(--accent-ink);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
   .rep-link:hover{text-decoration:underline}
   .rep-link:focus-visible,.rep-stage summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
@@ -844,9 +851,8 @@ state.semestre="";state.dateFrom="";state.dateTo="";
 function myBdm(){const me=normKey(localStorage.getItem("cloud_user")||"");if(!me)return"";
   const hit=[...new Set(DATA.map(d=>d.bdm))].find(b=>b&&normKey(b)===me||b&&me.startsWith(normKey(b)));return hit||"";}
 state.bdm=myBdm();
-let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm="",repDays=30;
-const REPORT_STALE_DAYS=30;
-let reportDrafts={},renderedReportKey="";
+let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm="";
+let reportDrafts={},reportOmitted={},renderedReportKey="";
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
 function canonicalFilterValue(k,value){
@@ -1106,12 +1112,12 @@ function repAge(d,asOf=repToday()){
   const created=history.find(h=>h&&/^Creada(?:$|[ (·])/.test(String(h.t||""))&&repDay(h.d)!==null&&repDay(h.d)<=now);
   return created?{days:now-repDay(created.d),date:created.d,estimated:true}:{days:null,date:"",estimated:false};
 }
-function reportData(rows,threshold=repDays,asOf=repToday()){
-  const open=rows.filter(d=>OPEN_STAGES.includes(d.estado));
-  const aged=open.map(d=>({d,...repAge(d,asOf)}));
-  return {open,stale:aged.filter(x=>x.days!==null&&x.days>=threshold).sort((a,b)=>b.days-a.days||repValue(b.d)-repValue(a.d)),
-    unknown:aged.filter(x=>x.days===null).map(x=>x.d),
-    top:open.filter(d=>repValue(d)>0).sort((a,b)=>repValue(b)-repValue(a)||a.id-b.id).slice(0,5)};
+function reportData(rows){
+  return {open:rows.filter(d=>OPEN_STAGES.includes(d.estado))};
+}
+function reportTopRows(rows,key=repBdm||"__all__"){
+  const omitted=reportOmitted[key]||new Set();
+  return rows.filter(d=>repValue(d)>0&&!omitted.has(d.id)).sort((a,b)=>repValue(b)-repValue(a)||a.id-b.id).slice(0,5);
 }
 function populateRep(){
   const sel=document.getElementById("rep-bdm"),opts=[...new Set(DATA.map(repOwner))].sort((a,b)=>a.localeCompare(b,"es"));
@@ -1121,14 +1127,14 @@ function populateRep(){
 function repOpp(d,age){
   const aging=age||(OPEN_STAGES.includes(d.estado)?repAge(d):null);
   const ageText=aging?(aging.days===null?'Antigüedad sin determinar':`${aging.days} días en etapa${aging.estimated?" · estimados desde inclusión/alta":" · desde "+aging.date}`):"";
-  return `<div class="rep-opp"><div class="ro-head"><button class="rep-link" data-report-id="${d.id}">${escHtml(d.cliente)}</button><span class="ro-val">${repValue(d)?repMoney(repValue(d)):"Sin importe"}</span></div>
+  return `<div class="rep-opp" data-report-item="${d.id}"><div class="ro-head"><button class="rep-link" contenteditable="false" data-report-id="${d.id}">${escHtml(d.cliente)}</button><span class="ro-val">${repValue(d)?repMoney(repValue(d)):"Sin importe"}</span><button class="rep-remove" contenteditable="false" type="button" data-report-remove="${d.id}" aria-label="Quitar ${escHtml(d.cliente)} del informe">Quitar del informe</button></div>
     <div class="ro-meta">${escHtml(repOwner(d))} · ${escHtml(d.estado)} · ${escHtml(d.tipologia)} · ${escHtml(d.region)}${d.opp?" · Ref. "+escHtml(d.opp):""}</div>
-    ${ageText?`<div class="rep-age${aging.days!==null&&aging.days>=repDays?" is-stale":""}">${escHtml(ageText)}</div>`:""}
+    ${ageText?`<div class="rep-age">${escHtml(ageText)}</div>`:""}
     <div class="ro-desc">${escHtml(d.desc||"Sin descripción registrada")}</div>
     ${d.motivo_ko?`<div class="ro-meta">Motivo KO: ${escHtml(d.motivo_ko)}</div>`:""}</div>`;
 }
 function repSection(title,content,emptyMsg){return `<section class="rep-section"><h3>${escHtml(title)}</h3>${content||`<p class="rep-empty">${escHtml(emptyMsg)}</p>`}</section>`;}
-function generatedReportText(bdm,rows,open,stale,top){
+function generatedReportText(bdm,rows,open,top){
   const label=bdm||"Todo el equipo",won=rows.filter(d=>d.estado==="Ganada"),lost=rows.filter(d=>d.estado==="Perdida / KO");
   const stages=REPORT_STAGES.map(stage=>`${stage}: ${rows.filter(d=>d.estado===stage).length}`).join(" · ");
   const paragraphs=[
@@ -1137,7 +1143,6 @@ function generatedReportText(bdm,rows,open,stale,top){
     `Distribución actual por etapa: ${stages}.`
   ];
   if(top.length)paragraphs.push(`Prioridad: ${top.slice(0,3).map(d=>`${d.cliente} (${repMoney(repValue(d))})`).join(", ")}.`);
-  paragraphs.push(stale.length?`Seguimiento recomendado: ${stale.length} propuestas llevan ${REPORT_STALE_DAYS} días o más sin cambiar de etapa.`:"No hay propuestas abiertas con más de 30 días en la misma etapa.");
   return paragraphs.join("\n\n");
 }
 function renderReport(){
@@ -1145,25 +1150,22 @@ function renderReport(){
   const previous=host?.querySelector("[data-report-draft]");
   if(previous)reportDrafts[renderedReportKey]=previous.innerText.trim();
   const key=repBdm||"__all__",rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
-  const {open,stale,top}=reportData(rows,REPORT_STALE_DAYS),staleIds=new Set(stale.map(x=>x.d.id));
-  const cell=list=>`<b>${list.length}</b><span>${repMoney(repSum(list))}</span>${list.some(d=>staleIds.has(d.id))?`<small class="is-stale">${list.filter(d=>staleIds.has(d.id)).length} sin avanzar</small>`:""}`;
-  const draft=reportDrafts[key]||generatedReportText(repBdm,rows,open,stale,top);
+  const {open}=reportData(rows),top=reportTopRows(rows,key);
+  const draft=reportDrafts[key]||generatedReportText(repBdm,rows,open,top);
   renderedReportKey=key;
-  host.innerHTML=`<div class="report"><h2>Informe comercial · ${escHtml(repBdm||"Todo el equipo")}</h2>
+  host.innerHTML=`<div class="report" contenteditable="true" aria-label="Informe editable"><h2 contenteditable="true">Informe comercial · ${escHtml(repBdm||"Todo el equipo")}</h2>
     <p class="rep-sub">${repToday()} · Importes AOV · Situación actual de la cartera</p>
     <section class="rep-section"><h3>Redacción del informe</h3><div class="rep-draft" data-report-draft contenteditable="true" role="textbox" aria-label="Redacción editable del informe" spellcheck="true">${escHtml(draft)}</div><p class="hint">Puedes modificar este texto directamente. Se conserva mientras trabajas con este BDM.</p></section>
     <div class="rep-metrics">
       <div class="rep-metric"><div class="rm-lbl">Propuestas abiertas</div><div class="rm-val">${open.length}</div></div>
       <div class="rep-metric"><div class="rm-lbl">Pipeline abierto</div><div class="rm-val">${repMoney(repSum(open))}</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Sin avanzar ≥ ${repDays} días</div><div class="rm-val is-stale">${stale.length}</div><div class="ro-meta">${repMoney(repSum(stale.map(x=>x.d)))}</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Mayor importe incluido</div><div class="rm-val">${top.length?repMoney(repValue(top[0])):"—"}</div><div class="ro-meta">Máximo de las 5 seleccionadas</div></div>
     </div>
     ${!rows.length?'<p class="rep-empty">No hay propuestas para este informe. Carga los datos reales desde Registros o la carpeta compartida.</p>':`
     <section class="rep-section"><h3>Funnel actual</h3><p class="hint">Número e importe por etapa de la cartera seleccionada.</p>
     <div class="twrap" tabindex="0" role="region" aria-label="Funnel actual por etapa"><table class="rep-matrix"><thead><tr><th scope="col">Etapa</th><th scope="col">Propuestas</th><th scope="col">Importe</th></tr></thead>
     <tbody>${REPORT_STAGES.map(s=>`<tr><th scope="row">${escHtml(s)}</th><td>${rows.filter(d=>d.estado===s).length}</td><td>${repMoney(repSum(rows.filter(d=>d.estado===s)))}</td></tr>`).join("")}</tbody></table></div></section>
-    ${repSection("Top 5 · propuestas abiertas de mayor importe",top.map(d=>repOpp(d)).join(""),"No hay propuestas abiertas con importe positivo.")}
-    <div class="note">Las propuestas abiertas se consideran estancadas desde <b>${REPORT_STALE_DAYS} días sin cambio de etapa</b>. Las notas y cambios de importe no reinician el contador.</div>
-    ${repSection("Propuestas sin avanzar",stale.map(x=>repOpp(x.d,x)).join(""),"No hay propuestas que superen los 30 días sin cambiar de etapa.")}`}
+    <section class="rep-section"><h3>5 propuestas más relevantes por importe</h3><p class="hint">Puedes quitar una propuesta de este informe sin borrarla del CRM.</p><div class="rep-top-list">${top.map(d=>repOpp(d)).join("")||'<p class="rep-empty">No hay propuestas con importe registrado.</p>'}</div></section>`}
   </div>`;
 }
 // Descargas locales: solo la cartera seleccionada y los datos presentes en el CRM.
@@ -1215,6 +1217,7 @@ function repEditableHtml(){
     let dirty=false;
     const report=document.getElementById("editable-report"),status=document.getElementById("edit-status");
     report.addEventListener("input",()=>{dirty=true;status.textContent="Cambios pendientes de guardar.";});
+    report.addEventListener("click",e=>{const remove=e.target.closest("[data-report-remove]");if(remove){remove.closest("[data-report-item]")?.remove();dirty=true;status.textContent="Cambios pendientes de guardar.";}});
     document.getElementById("print-report").addEventListener("click",()=>window.print());
     document.getElementById("save-report").addEventListener("click",()=>{
       status.textContent="Copia editable lista.";
@@ -1230,8 +1233,8 @@ function repEditableHtml(){
   return "<!doctype html>\n"+doc.documentElement.outerHTML;
 }
 function repCsv(){
-  const rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
-  const columns=["Cliente","Referencia","BDM","Territorio","KAM","Tipología","Estado","Importe AOV (EUR)","Descripción","Inclusión","Cierre","Días en etapa","Fecha de referencia","Origen de antigüedad","Sin avanzar","Umbral (días)","Fecha del informe"];
+  const rows=reportTopRows(DATA.filter(d=>!repBdm||repOwner(d)===repBdm),repBdm||"__all__");
+  const columns=["Cliente","Referencia","BDM","Territorio","KAM","Tipología","Estado","Importe AOV (EUR)","Descripción","Inclusión","Cierre"];
   // Los textos que Excel podría interpretar como fórmulas se exportan como texto.
   const cell=value=>{
     let text=String(value??"");
@@ -1239,14 +1242,19 @@ function repCsv(){
     return '"'+text.replace(/"/g,'""')+'"';
   };
   const lines=rows.map(d=>{
-    const open=OPEN_STAGES.includes(d.estado),age=open?repAge(d):null;
-    return [d.cliente,d.opp,repOwner(d),d.region,d.kam,d.tipologia,d.estado,repValue(d),d.desc,d.apertura,d.cierre,
-      age?.days??"",age?.date||"",!open?"No aplica":age.days===null?"Sin determinar":age.estimated?"Estimada desde inclusión/alta":"Cambio de etapa",
-      !open?"No aplica":age.days===null?"Sin determinar":age.days>=repDays?"Sí":"No",repDays,repToday()].map(cell).join(";");
+    return [d.cliente,d.opp,repOwner(d),d.region,d.kam,d.tipologia,d.estado,repValue(d),d.desc,d.apertura,d.cierre].map(cell).join(";");
   });
   return "\uFEFF"+[columns.map(cell).join(";"),...lines].join("\r\n");
 }
-document.getElementById("report").addEventListener("click",e=>{const b=e.target.closest("[data-report-id]");if(b)openEdit(Number(b.dataset.reportId));});
+document.getElementById("report").addEventListener("click",e=>{
+  const remove=e.target.closest("[data-report-remove]");
+  if(remove){
+    const id=Number(remove.dataset.reportRemove),key=renderedReportKey;
+    (reportOmitted[key] ||= new Set()).add(id);
+    renderReport();uiNotice("Propuesta quitada del informe · no se ha borrado del CRM");return;
+  }
+  const b=e.target.closest("[data-report-id]");if(b)openEdit(Number(b.dataset.reportId));
+});
 document.getElementById("report").addEventListener("input",e=>{const draft=e.target.closest("[data-report-draft]");if(draft)reportDrafts[renderedReportKey]=draft.innerText.trim();});
 window.addEventListener("beforeprint",()=>{if(document.getElementById("reports").classList.contains("active")){
   document.querySelectorAll(".rep-stage").forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});

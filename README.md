@@ -58,19 +58,12 @@ pública: es un fichero que se reparte y se abre en local.
 ## Reports
 
 El informe usa un único filtro de BDM. Muestra una distribución sencilla por
-etapa con número e importe, las cinco propuestas abiertas de mayor AOV y las
-propuestas sin avanzar durante 30 días o más. También redacta un texto breve
+etapa con número e importe y las cinco propuestas de mayor importe. También redacta un texto breve
 con el contexto del BDM seleccionado; ese texto se puede editar directamente
 en pantalla y se conserva mientras trabajas con ese BDM.
 
-Las alertas incluyen propuestas abiertas con al menos 30 días sin cambiar de
-etapa. Se utiliza la última transición registrada, compatible con el histórico
-anterior; las nuevas transiciones guardan también origen y destino de forma
-estructurada. Las notas y cambios de importe no reinician el contador. Sin
-transiciones, se estima la antigüedad desde la inclusión o el alta y se
-etiqueta como estimada. Las fechas ausentes, inválidas, futuras o los
-históricos inconsistentes se muestran como antigüedad sin determinar. Las
-alertas indican permanencia en etapa, no ausencia de actividad comercial.
+Las nuevas transiciones guardan origen y destino de forma estructurada. El
+detalle de cada propuesta permite abrir su ficha para editarla.
 
 Puedes editar las propuestas abriendo su ficha desde el nombre del cliente.
 **Descargar informe editable** genera una copia HTML autónoma: ábrela en el
