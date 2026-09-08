@@ -846,6 +846,18 @@ state.bdm=myBdm();
 let bdMode="region",funnelMode="count",searchTerm="",searchRaw="",repBdm="",repDays=30;
 
 function semestreList(){return [...new Set(DATA.map(semestreOf))].filter(Boolean).sort((a,b)=>(a.slice(3)+a.slice(1,2)).localeCompare(b.slice(3)+b.slice(1,2)));}
+function canonicalFilterValue(k,value){
+  const raw=String(value||"").trim();if(!raw)return "";
+  // El BDM puede venir con diferencias de acentos o mayúsculas al importar
+  // una hoja de cálculo. Conservamos la forma que realmente existe en DATA.
+  if(k==="bdm")return DATA.map(d=>d.bdm).find(v=>v&&normKey(v)===normKey(raw))||raw;
+  return raw;
+}
+function applyFilter(k,value){
+  const next=canonicalFilterValue(k,value);
+  if(state[k]===next)return;
+  state[k]=next;syncFilters();render();
+}
 function buildFilters(container){
   container.innerHTML="";
   FILTER_DEFS.forEach(f=>{
@@ -853,7 +865,9 @@ function buildFilters(container){
     const opts=(f.k==="estado")?ALL_STAGES.concat("Sin clasificar").filter(v=>DATA.some(d=>d.estado===v)):uniq(f.k);
     wrap.innerHTML=`<label>${f.label}</label><select data-k="${f.k}"><option value="">Todos</option>${opts.map(o=>`<option>${escHtml(o)}</option>`).join("")}</select>`;
     const sel=wrap.querySelector("select");sel.value=state[f.k];
-    sel.addEventListener("change",()=>{state[f.k]=sel.value;syncFilters();render();});
+    // `input` cubre navegadores embebidos; `change` cubre selección con teclado.
+    const onFilterEvent=()=>applyFilter(f.k,sel.value);
+    sel.addEventListener("input",onFilterEvent);sel.addEventListener("change",onFilterEvent);
     container.appendChild(wrap);
   });
   // Semestre (auto H1/H2)
@@ -898,7 +912,7 @@ function notifySaved(d,label){
   uiNotice(hidden?`${label} · guardado, pero oculto por los filtros actuales`:`${label} · guardado`);
 }
 function filtered(){return DATA.filter(d=>{
-  if(!FILTER_DEFS.every(f=>!state[f.k]||d[f.k]===state[f.k]))return false;
+  if(!FILTER_DEFS.every(f=>!state[f.k]||(f.k==="bdm"?normKey(d[f.k])===normKey(state[f.k]):d[f.k]===state[f.k])))return false;
   if(searchTerm&&!normKey(d.cliente).includes(searchTerm))return false;
   if(state.semestre&&semestreOf(d)!==state.semestre)return false;
   if(state.dateFrom||state.dateTo){const c=d.apertura;if(!c)return false;if(state.dateFrom&&c<state.dateFrom)return false;if(state.dateTo&&c>state.dateTo)return false;}
