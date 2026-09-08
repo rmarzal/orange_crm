@@ -279,7 +279,7 @@
   #reports .rep-metric .rm-val{font-size:27px;color:var(--ink);margin-top:10px}
   #reports .rep-metric:nth-child(1) .rm-val{color:var(--s2)}
   #reports .rep-metric:nth-child(2) .rm-val{color:var(--good)}
-  #reports .rep-metric:nth-child(3) .rm-val{color:var(--accent-ink)}
+  #reports .rep-metric:nth-child(3) .rm-val{color:var(--good)}
   #reports .rep-draft{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;padding:17px 18px;min-height:128px;font-size:14px;line-height:1.65;white-space:pre-wrap}
   #reports .rep-draft+ .hint{font-size:12px;margin-top:8px}
   #reports .twrap{border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;box-shadow:none}
@@ -1205,7 +1205,7 @@ function renderReport(){
   const previous=host?.querySelector("[data-report-draft]");
   if(previous&&reportDraftEdited[renderedReportKey])reportDrafts[renderedReportKey]=previous.innerText.trim();
   const key=repBdm||"__all__",rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm);
-  const {open}=reportData(rows),top=reportTopRows(rows,key);
+  const {open}=reportData(rows),won=rows.filter(d=>d.estado==="Ganada"),top=reportTopRows(rows,key);
   const draft=reportDraftEdited[key]?(reportDrafts[key]||""):generatedReportText(repBdm,rows,open,top);
   renderedReportKey=key;
   host.innerHTML=`<div class="report" contenteditable="true" aria-label="Informe editable"><h2 contenteditable="true">Informe comercial · ${escHtml(repBdm||"Todo el equipo")}</h2>
@@ -1214,7 +1214,7 @@ function renderReport(){
     <div class="rep-metrics">
       <div class="rep-metric"><div class="rm-lbl">Propuestas abiertas</div><div class="rm-val">${open.length}</div></div>
       <div class="rep-metric"><div class="rm-lbl">Pipeline abierto</div><div class="rm-val">${repMoney(repSum(open))}</div></div>
-      <div class="rep-metric"><div class="rm-lbl">Mayor importe incluido</div><div class="rm-val">${top.length?repMoney(repValue(top[0])):"—"}</div><div class="ro-meta">Máximo de las 5 seleccionadas</div></div>
+      <div class="rep-metric"><div class="rm-lbl">Ganado</div><div class="rm-val">${repMoney(repSum(won))}</div><div class="ro-meta">${won.length} ${won.length===1?"propuesta ganada":"propuestas ganadas"}</div></div>
     </div>
     ${!rows.length?'<p class="rep-empty">No hay propuestas para este informe. Carga los datos reales desde Registros o la carpeta compartida.</p>':`
     <section class="rep-section"><h3>Funnel actual</h3><p class="hint">Número e importe por etapa de la cartera seleccionada.</p>
