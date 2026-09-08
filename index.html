@@ -262,6 +262,36 @@
   .cloudbar button{padding:6px 12px;font-size:12.5px}
   .help{max-width:820px} .help h3{font-size:15px;margin:20px 0 5px;color:var(--ink)} .help ul,.help ol{margin:4px 0;padding-left:22px} .help li{margin:4px 0;font-size:13.5px;color:var(--ink-2)} .help p{font-size:13.5px;color:var(--ink-2)}
   .report{max-width:none;padding:22px 24px}
+  #reports{background:color-mix(in srgb,var(--bg) 88%,#e9e7df);border-radius:18px;padding:20px 20px 28px}
+  #reports .rep-toolbar{background:color-mix(in srgb,var(--surface) 94%,#f3f1eb);border:1px solid color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:18px;padding:15px 18px;box-shadow:none}
+  #reports .rep-toolbar .f label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--ink-3)}
+  #reports .rep-toolbar select{min-width:220px;background:var(--surface);border-color:color-mix(in srgb,var(--border) 85%,#d7d5cd);border-radius:10px;padding:10px 12px}
+  #reports>p.hint{padding:0 4px;color:var(--ink-2)}
+  #reports .report{background:color-mix(in srgb,var(--surface) 96%,#f3f1eb);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);padding:28px 30px}
+  #reports .report-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;margin-bottom:10px}
+  #reports .report h2{font-size:24px;letter-spacing:-.025em;margin-bottom:4px;color:var(--ink)}
+  #reports .report .rep-sub{font-size:13px;color:var(--ink-2);margin-bottom:22px}
+  #reports .rep-section h3,#reports .rep-metric .rm-lbl{font-family:var(--mono);letter-spacing:.12em}
+  #reports .rep-section h3{font-size:11px;border-bottom:0;margin-bottom:10px;padding-bottom:0}
+  #reports .rep-metrics{gap:14px;margin-bottom:24px}
+  #reports .rep-metric{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:15px;padding:16px 17px;min-height:102px}
+  #reports .rep-metric .rm-lbl{font-size:10px}
+  #reports .rep-metric .rm-val{font-size:27px;color:var(--ink);margin-top:10px}
+  #reports .rep-metric:nth-child(1) .rm-val{color:var(--s2)}
+  #reports .rep-metric:nth-child(2) .rm-val{color:var(--good)}
+  #reports .rep-metric:nth-child(3) .rm-val{color:var(--accent-ink)}
+  #reports .rep-draft{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;padding:17px 18px;min-height:128px;font-size:14px;line-height:1.65}
+  #reports .rep-draft+ .hint{font-size:12px;margin-top:8px}
+  #reports .twrap{border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;box-shadow:none}
+  #reports .rep-matrix th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;background:var(--surface-2)}
+  #reports .rep-matrix td,#reports .rep-matrix th{padding:12px 14px}
+  #reports .rep-matrix td:last-child{font-weight:700;text-align:right}
+  #reports .rep-opp{background:var(--surface);border-color:color-mix(in srgb,var(--border) 88%,#d8d7d0);border-radius:13px;padding:15px 16px}
+  #reports .rep-opp .ro-cli{font-size:15px}
+  #reports .rep-opp .ro-val{font-size:16px;color:var(--ink)}
+  #reports .rep-opp .ro-meta{font-size:11.5px}
+  #reports .rep-opp .ro-desc{font-size:13px}
+  #reports .note{background:var(--surface-2);border-left-color:var(--accent);border-radius:10px;margin-top:20px}
   .report[contenteditable="true"]{outline:0}
   .report[contenteditable="true"]:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
   .rep-top-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -287,6 +317,7 @@
   @media(max-width:640px){.report{padding:16px 12px}.rep-metrics{grid-template-columns:1fr}.rep-opp .ro-head{flex-wrap:wrap}.rep-stage summary span{display:block;margin-left:0}}
   @media print{
     body{background:white;color:black}.wrap{max-width:none;padding:0}
+    #reports{background:white;padding:0}
     header.top,nav.tabs,.wrap>.note,.cloudbar,.foot,.rep-toolbar,#reports>p,.backdrop,.notice{display:none!important}
     .report{padding:0;border:0;box-shadow:none}.report,.rep-metric,.rep-stage summary,table,th{background:white;color:black}
     .rep-matrix{font-size:9px}.rep-matrix th,.rep-matrix td{padding:5px;white-space:normal}.rep-matrix td span,.rep-matrix td small{font-size:9px}
@@ -381,11 +412,10 @@
   <section class="panel" id="reports">
     <div class="rep-toolbar">
       <div class="f"><label for="rep-bdm">Informe de BDM</label><select id="rep-bdm"></select></div>
-      <button class="btn" id="rep-download">Descargar informe editable</button>
-      <button class="reset" id="rep-csv">Descargar CSV para Excel</button>
-      <button class="reset" id="rep-print">🖨 Imprimir / PDF</button>
+      <button class="btn" id="rep-word">Descargar Word</button>
+      <button class="reset" id="rep-pdf">Descargar PDF</button>
     </div>
-    <p class="hint">Selecciona un BDM para generar un informe breve. La redacción se puede editar directamente en pantalla; pulsa un cliente para abrir su ficha.</p>
+    <p class="hint">Selecciona un BDM para generar un informe breve. Todo el informe se puede editar directamente. “Descargar Word” genera un documento editable; “Descargar PDF” abre el diálogo para guardarlo como PDF.</p>
     <div id="report"></div>
   </section>
 
@@ -528,7 +558,7 @@
       <h3>Pestañas</h3>
       <ul>
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
-        <li><b>Reports:</b> funnel por BDM con número e importe por etapa, top 5 de propuestas abiertas y alertas de permanencia (14, 30, 60 o 90 días). Usa su propio selector de BDM. Las fechas estimadas y desconocidas se indican por separado. Permite abrir fichas e imprimir el informe completo.</li>
+        <li><b>Reports:</b> informe sencillo por BDM con número e importe por etapa y las cinco propuestas de mayor importe. El texto y las propuestas se pueden editar o quitar del informe. Permite descargar un Word editable o guardar el informe como PDF.</li>
         <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
         <li><b>Revisión:</b> duplicados, sin clasificar, casos marcados con 🚩 para revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
@@ -1178,59 +1208,46 @@ function repDownload(content,type,filename){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function repEditableHtml(){
+function docxXmlEscape(value){return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
+function docxRun(text,bold=false,color="000000"){
+  return `<w:r><w:rPr>${bold?"<w:b/>":""}<w:color w:val="${color}"/></w:rPr><w:t xml:space="preserve">${docxXmlEscape(text)}</w:t></w:r>`;
+}
+function docxParagraph(text="",style="Normal",bold=false,color="000000"){
+  return `<w:p><w:pPr><w:pStyle w:val="${style}"/><w:spacing w:after="${style==="Normal"?140:180}"/></w:pPr>${docxRun(text,bold,color)}</w:p>`;
+}
+function docxTable(rows,header=false){
+  const body=rows.map((row,ri)=>`<w:tr>${row.map(cell=>`<w:tc><w:tcPr>${header&&ri===0?"<w:shd w:fill=\"14213D\"/>":""}<w:tcMar><w:top w:w="100" w:type="dxa"/><w:start w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:end w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:pPr><w:spacing w:after="80"/></w:pPr>${docxRun(cell,header&&ri===0,header&&ri===0?"FFFFFF":"000000")}</w:p></w:tc>`).join("")}</w:tr>`).join("");
+  return `<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="D9D9D9"/><w:left w:val="single" w:sz="4" w:color="D9D9D9"/><w:bottom w:val="single" w:sz="4" w:color="D9D9D9"/><w:right w:val="single" w:sz="4" w:color="D9D9D9"/><w:insideH w:val="single" w:sz="4" w:color="D9D9D9"/><w:insideV w:val="single" w:sz="4" w:color="D9D9D9"/></w:tblBorders></w:tblPr>${body}</w:tbl>`;
+}
+function docxCrc32(bytes){
+  if(!docxCrc32.table){docxCrc32.table=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);docxCrc32.table[n]=c>>>0;}}
+  let c=0xFFFFFFFF;for(const b of bytes)c=docxCrc32.table[(c^b)&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;
+}
+function docxZip(entries){
+  const encoder=new TextEncoder(),parts=[],central=[];let offset=0;
+  const u16=n=>{const a=new Uint8Array(2);new DataView(a.buffer).setUint16(0,n,true);return a;};
+  const u32=n=>{const a=new Uint8Array(4);new DataView(a.buffer).setUint32(0,n>>>0,true);return a;};
+  const join=arrays=>{const out=new Uint8Array(arrays.reduce((n,a)=>n+a.length,0));let p=0;arrays.forEach(a=>{out.set(a,p);p+=a.length;});return out;};
+  entries.forEach(([name,text])=>{const nameBytes=encoder.encode(name),data=encoder.encode(text),crc=docxCrc32(data),local=join([u32(0x04034b50),u16(20),u16(0x800),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0),nameBytes,data]);parts.push(local);
+    central.push(join([u32(0x02014b50),u16(20),u16(20),u16(0x800),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),nameBytes]));offset+=local.length;});
+  const directory=join(central),end=join([u32(0x06054b50),u16(0),u16(0),u16(entries.length),u16(entries.length),u32(directory.length),u32(offset),u16(0)]);return join([...parts,directory,end]);
+}
+function repDocx(){
   renderReport();
-  const doc=document.implementation.createHTMLDocument("Informe comercial · "+(repBdm||"Todo el equipo"));
-  doc.documentElement.lang="es";doc.documentElement.dataset.theme="light";
-  const charset=doc.createElement("meta");charset.setAttribute("charset","utf-8");doc.head.prepend(charset);
-  const viewport=doc.createElement("meta");viewport.name="viewport";viewport.content="width=device-width, initial-scale=1";doc.head.appendChild(viewport);
-  const style=doc.createElement("style");
-  style.textContent=document.querySelector("style").textContent+`
-    .export-tools{position:sticky;top:0;z-index:2;background:var(--bg);padding:12px 0}
-    .export-tools p{font-size:13px;color:var(--ink-2);margin:8px 0 0}
-    .report[contenteditable]:focus{outline:2px solid var(--accent);outline-offset:4px}
-    @media print{.export-tools{display:none}.report[contenteditable]:focus{outline:none}}
-  `;doc.head.appendChild(style);
-  const wrap=doc.createElement("main");wrap.className="wrap";
-  const toolbar=doc.createElement("div");toolbar.className="export-tools";
-  toolbar.innerHTML='<button class="btn" id="save-report">Guardar copia editada</button> <button class="reset" id="print-report">Imprimir / PDF</button><p>Pulsa sobre el informe para editar textos, cifras o añadir comentarios. Guarda una nueva copia para conservar tus cambios. Esta copia no sincroniza cambios con el CRM ni recalcula los totales.</p><p id="edit-status" role="status">Copia editable lista.</p>';
-  wrap.appendChild(toolbar);
-  const report=document.getElementById("report").firstElementChild.cloneNode(true);
-  report.querySelectorAll("[data-report-id]").forEach(button=>{
-    const name=doc.createElement("span");name.className="ro-cli";name.textContent=button.textContent;button.replaceWith(name);
-  });
-  // Todas las etapas quedan visibles y editables, también en impresión.
-  report.querySelectorAll("details").forEach(details=>{
-    const section=doc.createElement("section");section.className="rep-stage";
-    const heading=doc.createElement("h3");heading.textContent=details.querySelector("summary").textContent;
-    section.append(heading,details.querySelector("div"));details.replaceWith(section);
-  });
-  report.querySelectorAll(".hint").forEach(hint=>{
-    if(hint.textContent.includes("Pulsa un cliente"))hint.textContent="Detalle completo por etapa. Puedes editar el contenido de esta copia.";
-  });
-  const empty=report.querySelector(".rep-empty");
-  if(empty?.textContent.includes("Carga tus datos desde Registros"))empty.textContent="No hay propuestas para este informe. Para incluir tu cartera real, carga los datos en el CRM y descarga el informe de nuevo.";
-  report.id="editable-report";report.setAttribute("contenteditable","true");report.setAttribute("aria-label","Contenido editable del informe");report.spellcheck=true;
-  wrap.appendChild(report);doc.body.appendChild(wrap);
-  const script=doc.createElement("script");
-  script.textContent=`
-    let dirty=false;
-    const report=document.getElementById("editable-report"),status=document.getElementById("edit-status");
-    report.addEventListener("input",()=>{dirty=true;status.textContent="Cambios pendientes de guardar.";});
-    report.addEventListener("click",e=>{const remove=e.target.closest("[data-report-remove]");if(remove){remove.closest("[data-report-item]")?.remove();dirty=true;status.textContent="Cambios pendientes de guardar.";}});
-    document.getElementById("print-report").addEventListener("click",()=>window.print());
-    document.getElementById("save-report").addEventListener("click",()=>{
-      status.textContent="Copia editable lista.";
-      const html="<!doctype html>"+document.documentElement.outerHTML;
-      const url=URL.createObjectURL(new Blob([html],{type:"text/html;charset=utf-8"}));
-      const a=document.createElement("a");a.href=url;a.download=${JSON.stringify(repFilename("html"))};
-      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-      dirty=false;status.textContent="Copia descargada con tus cambios.";
-    });
-    window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
-  `;
-  doc.body.appendChild(script);
-  return "<!doctype html>\n"+doc.documentElement.outerHTML;
+  const root=document.querySelector("#report .report"),textOf=sel=>root.querySelector(sel)?.innerText.trim()||"";
+  const title=textOf("h2")||`Informe comercial · ${repBdm||"Todo el equipo"}`,subtitle=textOf(".rep-sub"),draft=textOf("[data-report-draft]");
+  const metrics=[...root.querySelectorAll(".rep-metric")].map(m=>[m.querySelector(".rm-lbl")?.innerText.trim()||"",m.querySelector(".rm-val")?.innerText.trim()||"",m.querySelector(".ro-meta")?.innerText.trim()||""]);
+  const funnel=[...root.querySelectorAll(".rep-matrix tbody tr")].map(tr=>[...tr.children].map(cell=>cell.innerText.trim()));
+  const top=[...root.querySelectorAll("[data-report-item]")].map(item=>({name:item.querySelector(".rep-link")?.innerText.trim()||"",amount:item.querySelector(".ro-val")?.innerText.trim()||"",meta:item.querySelector(".ro-meta")?.innerText.trim()||"",desc:item.querySelector(".ro-desc")?.innerText.trim()||""}));
+  const body=[docxParagraph(title,"Title",false,"14213D"),docxParagraph(subtitle,"Subtitle"),docxParagraph("Redacción del informe","Heading1"),...draft.split(/\n\n+/).map(p=>docxParagraph(p)),docxParagraph("Resumen","Heading1"),docxTable([["Indicador","Valor","Detalle"],...metrics],true),docxParagraph("Funnel actual","Heading1"),funnel.length?docxTable([["Etapa","Propuestas","Importe"],...funnel],true):docxParagraph("Sin propuestas en este informe."),docxParagraph("5 propuestas más relevantes por importe","Heading1")];
+  if(top.length)top.forEach(item=>{body.push(docxParagraph(`${item.name} · ${item.amount}`,"Heading2",true,"14213D"));body.push(docxParagraph(item.meta));if(item.desc)body.push(docxParagraph(item.desc));});else body.push(docxParagraph("No hay propuestas con importe registrado."));
+  const documentXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body.join("")}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="1000" w:bottom="1000" w:left="1000"/></w:sectPr></w:body></w:document>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/><w:color w:val="000000"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:uiPriority w:val="1"/><w:qFormat/><w:rPr><w:b/><w:sz w:val="34"/><w:color w:val="14213D"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="20"/><w:color w:val="697386"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="Heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="25"/><w:color w:val="14213D"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="Heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="23"/><w:color w:val="14213D"/></w:rPr></w:style></w:styles>`;
+  const contentTypes=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`;
+  const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const docRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const core=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${docxXmlEscape(title)}</dc:title><dc:creator>Orange CRM</dc:creator></cp:coreProperties>`;
+  return docxZip([["[Content_Types].xml",contentTypes],["_rels/.rels",rels],["word/document.xml",documentXml],["word/styles.xml",styles],["word/_rels/document.xml.rels",docRels],["docProps/core.xml",core]]);
 }
 function repCsv(){
   const rows=reportTopRows(DATA.filter(d=>!repBdm||repOwner(d)===repBdm),repBdm||"__all__");
@@ -1772,9 +1789,13 @@ async function cloudInit(){
 }
 function buildAllFilters(){buildFilters(document.getElementById('filters'));buildFilters(document.getElementById('filters2'));buildFilters(document.getElementById('filters3'));buildFilters(document.getElementById('filters4'));fillFormSelects();populateRep();}
 document.getElementById('rep-bdm').addEventListener('change',e=>{repBdm=e.target.value;renderReport();});
-document.getElementById('rep-download').addEventListener('click',()=>repDownload(repEditableHtml(),'text/html;charset=utf-8',repFilename('html')));
-document.getElementById('rep-csv').addEventListener('click',()=>repDownload(repCsv(),'text/csv;charset=utf-8',repFilename('csv')));
-document.getElementById('rep-print').addEventListener('click',()=>window.print());
+document.getElementById('rep-word').addEventListener('click',()=>repDownload(repDocx(),'application/vnd.openxmlformats-officedocument.wordprocessingml.document',repFilename('docx')));
+document.getElementById('rep-pdf').addEventListener('click',()=>{
+  renderReport();
+  const previous=document.title;document.title=`Informe comercial · ${repBdm||"Todo el equipo"}`;
+  const restore=()=>{document.title=previous;window.removeEventListener("afterprint",restore);};
+  window.addEventListener("afterprint",restore);window.print();setTimeout(restore,120000);
+});
 document.getElementById('filters2').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters3').addEventListener('change',()=>{syncFilters();render();});
 document.getElementById('filters4').addEventListener('change',()=>{syncFilters();render();});
