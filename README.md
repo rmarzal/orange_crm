@@ -29,11 +29,15 @@ pública: es un fichero que se reparte y se abre en local.
 ## Funcionalidades
 
 - **Embudo & Dashboard**: KPIs (abiertas, valor de pipeline, ganadas,
-  perdidas, win rate) y embudo de conversión por nº o por €.
+  perdidas, win rate) y embudo de conversión por nº o por €. La barra de
+  filtros incluye, entre otros, un **filtro por Partner** (además de
+  Territorio, BDM, KAM, Sector, Tipología y Estado).
 - **Reports**: informe sencillo por BDM, número e importe por etapa y las
   cinco propuestas de mayor importe. La redacción analiza todas las métricas
   visibles del funnel y el texto y las propuestas se pueden
-  editar o quitar del informe. Incluye descarga DOCX y guardado como PDF.
+  editar o quitar del informe. Incluye descarga DOCX, guardado como PDF y
+  **«Rellenar plantilla»** (genera un PowerPoint de seguimiento del BDM
+  seleccionado a partir de la plantilla incrustada).
 - **Tablero Kanban**: arrastrar y soltar entre etapas (queda en el
   histórico) y botón para duplicar una oportunidad.
 - **Revisión**: clientes duplicados, oportunidades sin clasificar, casos
@@ -75,6 +79,50 @@ Ambas opciones funcionan localmente, sin dependencias ni conexión.
 
 El informe solo utiliza los datos reales que se carguen en la aplicación;
 no incluye datos ficticios ni de demostración.
+
+## Rellenar plantilla (PowerPoint)
+
+En **Reports**, el botón **«Rellenar plantilla»** genera un `.pptx` de
+seguimiento para el **BDM seleccionado** en el desplegable, a partir de la
+plantilla corporativa incrustada en la propia app (no requiere subir ni
+seleccionar ningún archivo). Todo ocurre en local, sin librerías: solo se
+reescribe el contenido de la diapositiva y se conserva intacto el resto del
+diseño (imágenes, estilos, gráfico).
+
+Qué rellena, con los datos del BDM:
+
+- **Título**: «Seguimiento <BDM>».
+- **Oportunidades ganadas**: estado `Ganada` (cliente e importe) y el
+  **Total ganado**.
+- **Ofertas presentadas**: estado `Oferta enviada` (cliente e importe) y el
+  **Total presentado**.
+- **Oportunidades en elaboración**: estado `En proceso` (cliente e importe) y
+  el **Total en elaboración**. *(«Sin empezar» no se incluye.)*
+- **Previsión de cierre**: **ganado + 80 % de lo presentado** (los dos
+  sumandos del recuadro inferior).
+- **% conseguido** (rombo/indicador) y el **gráfico de rosco**
+  (Conseguido / Pendiente): calculados sobre un **objetivo de 0,6 M €**.
+  El **YTD** muestra lo ganado en millones.
+
+Los importes se toman del campo AOV de cada oportunidad. Cada columna lista
+las de mayor importe; si hay más de las que caben, se añade una fila
+«(+N más)» y los totales siguen reflejando **todas**.
+
+## Vista de partner (Orange Business)
+
+Permite enseñar el CRM a un partner **sin darle acceso total**: solo ve
+**sus** oportunidades y **en solo lectura**.
+
+- En **Registros**, **«Exportar vista partner (OB)»** genera un HTML
+  autocontenido (`CRM-OB.html`) con los datos **únicamente del partner
+  Orange Business** (campo *Partner* = `OB`, `Orange Business`, …). Ese
+  archivo es la misma app pero **de solo lectura**: no permite editar,
+  crear, importar ni conectar carpetas, y no escribe nada en el navegador.
+- **Se actualiza solo**: cuando el equipo tiene conectada la carpeta
+  compartida, cada guardado regenera automáticamente esa copia en
+  `DB_CRM/OB/CRM-OB.html`. Basta con **compartir esa subcarpeta** (por
+  ejemplo en SharePoint) con el partner: verá siempre la versión al día,
+  aislada del resto de datos del equipo.
 
 ## Seguridad y robustez
 
