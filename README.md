@@ -1,4 +1,4 @@
-# Orange CRM · Pipeline Comercial
+# Orange CRM · Pipeline Comercial · **DEMO**
 
 Aplicación de seguimiento del pipeline comercial que sustituye el Excel del
 equipo: dashboard con KPIs, embudo de conversión, tablero Kanban, control de
@@ -6,9 +6,20 @@ duplicados y limpieza de datos.
 
 Es un **único archivo HTML autocontenido** (sin servidor, sin instalación, sin
 dependencias externas): la lógica y el diseño viajan dentro del propio
-fichero. **Este repositorio no contiene datos comerciales** — se distribuye
-sin oportunidades cargadas (`RAW = []`) para poder mantenerlo en un repo
-público; los datos reales se cargan aparte, en local, y nunca se suben aquí.
+fichero.
+
+> ## ⚠️ Versión de demostración
+>
+> Esta rama (`crm_demo`) trae la app **precargada con datos 100 % ficticios**
+> (`RAW = [...]`) para poder **publicarla y enseñarla como demo**. Ninguna
+> empresa, persona (clientes, KAM, BDM) ni importe corresponde a datos reales:
+> todos los nombres son inventados. Es seguro compartir este fichero en
+> público.
+>
+> Para volver a una versión **sin datos** (repo público sin oportunidades),
+> basta con dejar `const RAW = [];` en `index.html`. Los datos de demo se
+> guardan bajo una clave de `localStorage` propia (`pipeline_demo_v1`), aislada
+> de cualquier uso real.
 
 ## Cómo se usa
 
@@ -73,8 +84,8 @@ informe visible y sus cinco propuestas. **Descargar PDF** abre el diálogo de
 impresión del navegador para guardarlo como PDF, conservando el estilo visual.
 Ambas opciones funcionan localmente, sin dependencias ni conexión.
 
-El informe solo utiliza los datos reales que se carguen en la aplicación;
-no incluye datos ficticios ni de demostración.
+El informe utiliza los datos cargados en la aplicación. En esta versión demo
+esos datos son ficticios; en la versión de trabajo, los reales que cargues.
 
 ## Seguridad y robustez
 

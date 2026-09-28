@@ -2,7 +2,7 @@
 <html lang="es">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pipeline Comercial · Funnel & Seguimiento</title>
+<title>Pipeline Comercial · Funnel & Seguimiento · DEMO</title>
 <style>
   :root{
     --bg:#f4f5f7; --surface:#ffffff; --surface-2:#fafbfc; --border:#e4e7ec;
@@ -332,7 +332,7 @@
       <h1>Pipeline Comercial · Funnel & Seguimiento</h1>
       <span id="rec-count" hidden></span>
     </div>
-    <span class="proto-tag">Prototipo v13</span>
+    <span class="proto-tag">Demo · datos ficticios</span>
   </header>
   <div id="cloudbar" class="cloudbar" style="display:none"></div>
 
@@ -552,8 +552,9 @@
       <h3>Situaciones que la app te avisa</h3>
       <ul>
         <li><b>«El archivo cambió (otro guardó). Recargando…»</b> — aviso automático abajo: alguien guardó mientras editabas; la app recarga sola los datos. Vuelve a aplicar tu cambio. <b>No se pierde nada en silencio.</b></li>
-        <li><b>«⚠ Copia en conflicto en la carpeta»</b> — la barra superior te avisa si OneDrive creó una copia (p. ej. <span class="mono">pipeline-PORTATIL-JORGE.json</span>) por edición casi simultánea. <b>Qué hacer:</b> quédate con <span class="mono">pipeline.json</span> y borra la copia.</li>
+        <li><b>«⚠ Copia en conflicto en la carpeta»</b> — la barra superior te avisa si OneDrive creó una copia (p. ej. <span class="mono">pipeline-EQUIPO-DEMO.json</span>) por edición casi simultánea. <b>Qué hacer:</b> quédate con <span class="mono">pipeline.json</span> y borra la copia.</li>
       </ul>
+      <p class="hint" style="margin-top:6px">Nota: en esta demo los datos vienen precargados con contenido ficticio; no hace falta conectar ninguna carpeta para probarla.</p>
 
       <h3>Pestañas</h3>
       <ul>
@@ -572,7 +573,7 @@
       </ul>
 
       <h3>Filtros</h3>
-      <p>Territorio, KAM, BDM, sector, tipología, estado, semestre (H1/H2 automático) y rango de fechas. Por defecto filtra por <b>BDM = Rubén</b>; ponlo en <b>«Todos»</b> para ver el equipo.</p>
+      <p>Territorio, KAM, BDM, sector, tipología, estado, semestre (H1/H2 automático) y rango de fechas. Por defecto, si tu nombre coincide con un BDM, filtra por <b>tu BDM</b>; ponlo en <b>«Todos»</b> para ver el equipo.</p>
 
       <h3>Datos (pestaña Registros)</h3>
       <ul>
@@ -590,12 +591,12 @@
         <button class="reset" id="help-reset">↺ Reiniciar datos locales</button>
       </p>
 
-      <h3>Confidencial</h3>
-      <p>Contiene datos comerciales reales: <b>no lo subas a webs públicas ni lo compartas fuera del equipo</b>.</p>
+      <h3>Versión demo</h3>
+      <p>Esta es la <b>versión de demostración</b>: todas las oportunidades, clientes y personas son <b>ficticias</b> y no corresponden a datos reales. Se puede compartir y publicar libremente para enseñar la aplicación.</p>
     </div>
   </section>
 
-  <p class="foot">Maqueta sobre <span class="mono">Pipeline_comercial.xlsx</span> · los datos viven solo en tu navegador</p>
+  <p class="foot">Versión DEMO · datos ficticios de ejemplo · los datos viven solo en tu navegador</p>
 </div>
 
 <!-- GENERIC CONFIRM (los diálogos nativos están bloqueados en el sandbox) -->
@@ -676,27 +677,87 @@
 </div>
 
 <script>
-const RAW = [];
-const LS_KEY="pipeline_proto_v13";
+/* ─────────────────────────────────────────────────────────────────────────
+   DATOS DEMO — contenido 100% ficticio para publicar y enseñar la app.
+   Ninguna empresa, persona ni importe corresponde a datos reales; los nombres
+   de cliente, KAM y BDM son inventados. Para volver a la versión sin datos,
+   basta con dejar «const RAW = [];».
+   ───────────────────────────────────────────────────────────────────────── */
+const RAW = [
+  // ── Ganadas ──
+  {cliente:"ModaViva",region:"Cataluña",bdm:"Laura Sáez",kam:"Álex Romero",sector:"Retail",tipologia:"Agentes IA",estado:"Ganada",aov:120000,rec:36000,apertura:"2025-06-10",cierre:"2025-09-18",partner:"Microsoft",desc:"Agente conversacional de atención al cliente para la tienda online."},
+  {cliente:"Frescos del Valle",region:"Levante",bdm:"Óscar Ferrer",kam:"Marta Gil Soto",sector:"alimentacion retail",tipologia:"Machine Learning",estado:"Ganada",aov:95000,rec:24000,apertura:"2025-05-02",cierre:"2025-08-27",partner:"Databricks",desc:"Predicción de demanda y optimización de mermas en frescos."},
+  {cliente:"Banca Ribera",region:"Centro",bdm:"Elena Ruiz",kam:"Diego Navarro",sector:"finanzas",tipologia:"IA Gen",estado:"Ganada",aov:210000,rec:60000,apertura:"2025-04-15",cierre:"2025-07-30",partner:"Azure OpenAI",desc:"Asistente interno de banca para consulta de normativa y productos."},
+  {cliente:"Voltia Energía",region:"Norte",bdm:"Pau Vidal",kam:"Nuria Prat",sector:"Energía",tipologia:"IA Clásica",estado:"Ganada",aov:78000,rec:18000,apertura:"2025-07-01",cierre:"2025-09-12",partner:"AWS",desc:"Detección de fraude en lecturas de contadores."},
+  {cliente:"Clínica Vithara",region:"Sur",bdm:"Laura Sáez",kam:"Sara López",sector:"Sanidad",tipologia:"gen ai",estado:"Ganada",aov:64000,rec:15000,apertura:"2025-06-20",cierre:"2025-09-05",partner:"Google Cloud",desc:"Resumen automático de informes clínicos."},
+  {cliente:"HogarPlus",region:"Cataluña",bdm:"Óscar Ferrer",kam:"Hugo Ramos",sector:"Gran consumo",tipologia:"Agentes IA",estado:"Ganada",aov:88000,rec:21000,apertura:"2025-03-11",cierre:"2025-06-24",partner:"Salesforce",desc:"Agente de recomendación de producto en punto de venta."},
+  {cliente:"Instituto Cétaro",region:"Centro",bdm:"Elena Ruiz",kam:"Carla Méndez",sector:"Centro Investigación",tipologia:"Machine Learning",estado:"Ganada",aov:145000,rec:0,apertura:"2025-02-18",cierre:"2025-06-02",partner:"NVIDIA",desc:"Modelo de visión para análisis de imagen de laboratorio."},
+  {cliente:"SeguriTech",region:"Levante",bdm:"Pau Vidal",kam:"Iván Castro",sector:"Seguridad",tipologia:"IA Clásica",estado:"Ganada",aov:52000,rec:12000,apertura:"2025-08-04",cierre:"2026-01-15",partner:"AWS",desc:"Clasificación de alertas de videovigilancia."},
+
+  // ── Oferta enviada ──
+  {cliente:"TorreVerde Real Estate",region:"Cataluña",bdm:"Laura Sáez",kam:"Álex Romero",sector:"real state",tipologia:"IA Gen",estado:"Oferta enviada",aov:130000,rec:30000,apertura:"2026-05-06",cierre:"",partner:"Azure OpenAI",desc:"Generador de descripciones y tasación asistida de inmuebles."},
+  {cliente:"Lácteos Aurora",region:"Norte",bdm:"Óscar Ferrer",kam:"Marta Gil Soto",sector:"Alimentación",tipologia:"Machine Learning",estado:"Oferta enviada",aov:99000,rec:26000,apertura:"2026-04-22",cierre:"",partner:"Databricks",desc:"Control de calidad por visión en línea de envasado."},
+  {cliente:"FinArco",region:"Centro",bdm:"Elena Ruiz",kam:"Diego Navarro",sector:"Banca",tipologia:"Agentes IA",estado:"Oferta enviada",aov:185000,rec:48000,apertura:"2026-06-01",cierre:"",partner:"Microsoft",desc:"Agente de soporte a gestores para onboarding de clientes."},
+  {cliente:"Hospitales Aurum",region:"Sur",bdm:"Pau Vidal",kam:"Sara Lopez Vidal",sector:"sanidad",tipologia:"IA Gen",estado:"Oferta enviada",aov:160000,rec:40000,apertura:"2026-05-19",cierre:"",partner:"Google Cloud",desc:"Copiloto documental para historia clínica electrónica."},
+  {cliente:"RetailPunto",region:"Levante",bdm:"Laura Sáez",kam:"Hugo Ramos",sector:"tech retail",tipologia:"Machine Learning",estado:"Oferta enviada",aov:72000,rec:16000,apertura:"2026-07-03",cierre:"",partner:"AWS",desc:"Previsión de stock por tienda y categoría."},
+  {cliente:"GasNoval",region:"Norte",bdm:"Óscar Ferrer",kam:"Nuria Prat",sector:"energia",tipologia:"IA Clásica",estado:"Oferta enviada",aov:110000,rec:28000,apertura:"2026-06-12",cierre:"",partner:"SAP",desc:"Mantenimiento predictivo de infraestructura de gas."},
+  {cliente:"Inmohabitat",region:"Cataluña",bdm:"Elena Ruiz",kam:"Carla Méndez",sector:"Inmobiliario",tipologia:"consutloria ia",estado:"Oferta enviada",aov:45000,rec:0,apertura:"2026-07-28",cierre:"",partner:"",desc:"Consultoría de casos de uso de IA en gestión de patrimonio."},
+  {cliente:"BebiCo",region:"Centro",bdm:"Pau Vidal",kam:"Iván Castro",sector:"Gran consumo",tipologia:"Agentes IA",estado:"Oferta enviada",aov:83000,rec:20000,apertura:"2026-08-08",cierre:"",partner:"Microsoft",desc:"Agente de gestión de pedidos para canal HORECA."},
+  {cliente:"Centro I+D Nébula",region:"Otros",bdm:"Laura Sáez",kam:"Álex Romero",sector:"Centro Investigación",tipologia:"gen ai",estado:"Oferta enviada",aov:135000,rec:0,apertura:"2026-06-25",cierre:"",partner:"NVIDIA",desc:"Plataforma de experimentación con modelos generativos."},
+
+  // ── En proceso ──
+  {cliente:"TiendaNorte",region:"Norte",bdm:"Óscar Ferrer",kam:"Marta Gil Soto",sector:"Retail",tipologia:"Machine Learning",estado:"En proceso",aov:68000,rec:14000,apertura:"2026-08-14",cierre:"",partner:"AWS",desc:"Segmentación de clientes y motor de recomendación."},
+  {cliente:"Congelados Delmar",region:"Levante",bdm:"Elena Ruiz",kam:"Diego Navarro",sector:"Alimentación",tipologia:"IA Clásica",estado:"En proceso",aov:57000,rec:13000,apertura:"2026-07-30",cierre:"",partner:"Databricks",desc:"Optimización de rutas de distribución en frío."},
+  {cliente:"Caja Meridian",region:"Sur",bdm:"Pau Vidal",kam:"Sara López",sector:"Banca",tipologia:"IA Gen",estado:"En proceso",aov:175000,rec:45000,apertura:"2026-08-20",cierre:"",partner:"Azure OpenAI",desc:"Asistente para reclamaciones y atención omnicanal."},
+  {cliente:"EnerGia Solar",region:"Centro",bdm:"Laura Sáez",kam:"Hugo Ramos",sector:"Energía",tipologia:"Machine Learning",estado:"En proceso",aov:92000,rec:22000,apertura:"2026-07-16",cierre:"",partner:"Google Cloud",desc:"Predicción de generación fotovoltaica."},
+  {cliente:"ModaViva",region:"Cataluña",bdm:"Óscar Ferrer",kam:"Álex Romero",sector:"Retail",tipologia:"Agentes IA",estado:"En proceso",aov:60000,rec:15000,apertura:"2026-09-01",cierre:"",partner:"Microsoft",desc:"Ampliación: agente para postventa y devoluciones."},
+  {cliente:"Construcciones Belmar",region:"Norte",bdm:"Elena Ruiz",kam:"Nuria Prat",sector:"real state/construccion",tipologia:"agente ia",estado:"En proceso",aov:48000,rec:0,apertura:"2026-08-28",cierre:"",partner:"",desc:"Agente de seguimiento de obra y partes de trabajo."},
+  {cliente:"FarmaSalud",region:"Sur",bdm:"Pau Vidal",kam:"Carla Méndez",sector:"Sanidad",tipologia:"Machine Learning",estado:"En proceso",aov:81000,rec:19000,apertura:"2026-09-05",cierre:"",partner:"AWS",desc:"Detección de interacciones en dispensación farmacéutica."},
+  {cliente:"Vigial Seguridad",region:"Levante",bdm:"Laura Sáez",kam:"Iván Castro",sector:"Seguridad",tipologia:"IA Clásica",estado:"En proceso",aov:39000,rec:9000,apertura:"2026-09-10",cierre:"",partner:"NVIDIA",desc:"Reconocimiento de matrículas en accesos."},
+  {cliente:"Clínica Vithara",region:"Sur",bdm:"Óscar Ferrer",kam:"Sara López",sector:"Sanidad",tipologia:"IA Gen",estado:"En proceso",aov:70000,rec:17000,apertura:"2026-09-12",cierre:"",partner:"Google Cloud",desc:"Ampliación: triaje asistido en atención primaria."},
+  {cliente:"Gestoría Alba",region:"Otros",bdm:"Elena Ruiz",kam:"Alejandro Romero",sector:"",tipologia:"ml",estado:"En proceso - Revisar caso",aov:30000,rec:0,apertura:"2026-08-22",cierre:"",partner:"",desc:"Caso a revisar: alcance por confirmar. El KAM llega como «Alejandro Romero» y se unifica con «Álex Romero»."},
+  {cliente:"Meridian Foods",region:"Centro",bdm:"Pau Vidal",kam:"Marta Gil Soto",sector:"Alimentación",tipologia:"Agentes IA",estado:"En proceso",aov:64000,rec:16000,apertura:"2026-09-08",cierre:"",partner:"Microsoft",desc:"Agente de reposición automática en almacén."},
+  {cliente:"Nordia Retail",region:"Norte",bdm:"Laura Sáez",kam:"Diego Navarro",sector:"Retail",tipologia:"gen ai",estado:"En proceso",aov:55000,rec:12000,apertura:"2026-09-15",cierre:"",partner:"Azure OpenAI",desc:"Generación de fichas de producto multiidioma."},
+  {cliente:"Levantia Seguros",region:"Levante",bdm:"Óscar Ferrer",kam:"Hugo Ramos",sector:"finanzas",tipologia:"Machine Learning",estado:"En proceso",aov:118000,rec:29000,apertura:"2026-08-30",cierre:"",partner:"Databricks",desc:"Scoring de riesgo y automatización de peritaciones."},
+
+  // ── Sin empezar ──
+  {cliente:"Grupo Andévalo",region:"Sur",bdm:"Elena Ruiz",kam:"Nuria Prat",sector:"Gran consumo",tipologia:"Agentes IA",estado:"Sin empezar",aov:50000,rec:12000,apertura:"2026-09-18",cierre:"",partner:"",desc:"Exploración inicial de agente de atención B2B."},
+  {cliente:"AquaNova",region:"Levante",bdm:"Pau Vidal",kam:"Carla Méndez",sector:"Energía",tipologia:"IA Clásica",estado:"Sin empezar",aov:42000,rec:0,apertura:"2026-09-20",cierre:"",partner:"AWS",desc:"Analítica de consumo de agua industrial."},
+  {cliente:"Petra Inmuebles",region:"Centro",bdm:"Laura Sáez",kam:"Iván Castro",sector:"Inmobiliario",tipologia:"IA Gen",estado:"Sin empezar",aov:38000,rec:0,apertura:"2026-09-22",cierre:"",partner:"",desc:"Chat de captación de leads en portal inmobiliario."},
+  {cliente:"BioLab Ibérica",region:"Cataluña",bdm:"Óscar Ferrer",kam:"Sara López",sector:"Centro Investigación",tipologia:"Machine Learning",estado:"Sin empezar",aov:97000,rec:0,apertura:"2026-09-23",cierre:"",partner:"NVIDIA",desc:"Modelado predictivo de ensayos de laboratorio."},
+  {cliente:"Dulces Marbella",region:"Sur",bdm:"Elena Ruiz",kam:"Álex Romero",sector:"Alimentación",tipologia:"Agentes IA",estado:"Sin empezar",aov:33000,rec:8000,apertura:"2026-09-24",cierre:"",partner:"Microsoft",desc:"Agente de pedidos para obradores y distribución."},
+  {cliente:"CréditoDirecto",region:"Centro",bdm:"Pau Vidal",kam:"Diego Navarro",sector:"Banca",tipologia:"IA Gen",estado:"Sin empezar",aov:150000,rec:38000,apertura:"2026-09-25",cierre:"",partner:"Azure OpenAI",desc:"Asistente de originación de crédito al consumo."},
+  {cliente:"Textil Aranda",region:"Norte",bdm:"Laura Sáez",kam:"Marta Gil Soto",sector:"Retail",tipologia:"Consultoría",estado:"Sin empezar",aov:28000,rec:0,apertura:"2026-09-26",cierre:"",partner:"",desc:"Consultoría de adopción de IA en cadena textil."},
+
+  // ── Perdida / KO ──
+  {cliente:"OmniShop",region:"Cataluña",bdm:"Óscar Ferrer",kam:"Hugo Ramos",sector:"Retail",tipologia:"Agentes IA",estado:"Perdida / KO",aov:0,rec:0,apertura:"2025-05-14",cierre:"2025-08-01",partner:"",desc:"Descartado por presupuesto."},
+  {cliente:"Ríos Energía",region:"Norte",bdm:"Elena Ruiz",kam:"Nuria Prat",sector:"Energía",tipologia:"Machine Learning",estado:"Perdida / KO",aov:65000,rec:0,apertura:"2025-06-09",cierre:"2025-09-20",partner:"AWS",desc:"Pausado por reorganización interna del cliente."},
+  {cliente:"Salud Global",region:"Sur",bdm:"Pau Vidal",kam:"Carla Méndez",sector:"Sanidad",tipologia:"IA Gen",estado:"Perdida / KO",aov:0,rec:0,apertura:"2025-07-22",cierre:"2025-10-10",partner:"Google Cloud",desc:"Elige a un competidor."},
+  {cliente:"Foods Delta",region:"Levante",bdm:"Laura Sáez",kam:"Iván Castro",sector:"Alimentación",tipologia:"IA Clásica",estado:"Perdida / KO",aov:0,rec:0,apertura:"2025-08-30",cierre:"2025-12-05",partner:"",desc:"La solución no encajaba con su stack."},
+  {cliente:"Urbania Homes",region:"Centro",bdm:"Óscar Ferrer",kam:"Sara López",sector:"Inmobiliario",tipologia:"IA Gen",estado:"Perdida / KO",aov:54000,rec:0,apertura:"2025-09-15",cierre:"2026-01-20",partner:"",desc:"Sin partner adecuado en plazo."},
+
+  // ── Sin clasificar (para la vista de Revisión) ──
+  {cliente:"Prospecto Sin Clasificar",region:"",bdm:"Elena Ruiz",kam:"",sector:"",tipologia:"",estado:"",aov:25000,rec:0,apertura:"2026-09-19",cierre:"",partner:"",desc:"Lead entrante pendiente de cualificar y asignar etapa."}
+];
+const LS_KEY="pipeline_demo_v1";
 const MOTIVOS_KO=["Precio / presupuesto","No encaja la solución","Sin partner adecuado","Timing / pausado","Competencia","Requisitos no cubiertos","Otro"];
 const KO_DEFAULT_AOV=40000;   // valor por defecto para oportunidades perdidas sin importe
 
 /* alias maps — mismo nombre = misma forma (también al teclear nuevos) */
 /* alias de KAM: la clave va normalizada (sin acentos, minúsculas) */
+/* alias de KAM (nombres DEMO ficticios): la clave va normalizada (sin acentos, minúsculas) */
 const CANON_KAM={
-  "angel fernandez":"Ángel Fernández Montoro","angel fernandez montoro":"Ángel Fernández Montoro",
-  "jorge de calatrava":"Jorge Calatrava","jorge calatrava":"Jorge Calatrava",
-  "jose felix":"José Félix Villena","jose felix villena":"José Félix Villena",
-  "luis mourino":"Luis González Mouriño","luis gonzalez mourino":"Luis González Mouriño",
-  "ruben ruiz":"Rubén Ruiz",
-  "pablo garcia":"Pablo García Bauza","pablo garcia bauza":"Pablo García Bauza",
-  "maria jose miguens":"María José Miguens",
-  "luis blanco":"Luis Blanco Barrio","luis blanco barrio":"Luis Blanco Barrio",
-  "antonio rochela":"Toni Rochela","toni rochela":"Toni Rochela",
-  "kike amor":"Enrique Amor","enrique amor":"Enrique Amor",
-  "borja gonzalez":"Borja Gonzálvez Raga","borja gonzalez raga":"Borja Gonzálvez Raga","borja gonzalvez raga":"Borja Gonzálvez Raga"
+  "alex romero":"Álex Romero","alejandro romero":"Álex Romero",
+  "marta gil":"Marta Gil Soto","marta gil soto":"Marta Gil Soto",
+  "diego navarro":"Diego Navarro",
+  "nuria prat":"Nuria Prat",
+  "ivan castro":"Iván Castro",
+  "sara lopez":"Sara López","sara lopez vidal":"Sara López",
+  "hugo ramos":"Hugo Ramos",
+  "carla mendez":"Carla Méndez"
 };
-const CANON_CLIENTE={"consulta ayuntamiento las palmas":"Ayuntamiento de Las Palmas","fain":"Fain Ascensores"};
+/* canonicalización de cliente (variantes DEMO que se unifican) */
+const CANON_CLIENTE={"inmohabitat sa":"Inmohabitat","modaviva sl":"ModaViva"};
 /* limpia el nombre de KAM: quita anotaciones "(J)", se queda con la 1ª persona si hay "A / B", y aplica alias */
 function canonKam(v){
   if(v==null)return"—";
@@ -740,7 +801,7 @@ function today(){const d=new Date();return d.toISOString().slice(0,10);}
 function escHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
 /* ---- estandarización de caracteres: acentos/mayúsculas/espacios no diferencian ---- */
-/* "Rubén" y "Ruben" son lo mismo → se unifican a una única forma canónica */
+/* "José" y "Jose" son lo mismo → se unifican a una única forma canónica */
 function normKey(s){return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();}
 function diacCount(s){return (String(s).normalize("NFD").match(/[\u0300-\u036f]/g)||[]).length;}
 function chooseRep(vs){
