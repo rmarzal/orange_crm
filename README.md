@@ -113,16 +113,21 @@ las de mayor importe; si hay más de las que caben, se añade una fila
 Permite enseñar el CRM a un partner **sin darle acceso total**: solo ve
 **sus** oportunidades y **en solo lectura**.
 
-- En **Registros**, **«Exportar vista partner (OB)»** genera un HTML
-  autocontenido (`CRM-OB.html`) con los datos **únicamente del partner
-  Orange Business** (campo *Partner* = `OB`, `Orange Business`, …). Ese
-  archivo es la misma app pero **de solo lectura**: no permite editar,
-  crear, importar ni conectar carpetas, y no escribe nada en el navegador.
+- En **Registros**, **«Generar CRM de partner (OB)»** crea el **mismo
+  ejecutable del CRM** (`index.html`) en una **carpeta nueva** que elijas,
+  con los datos **únicamente del partner Orange Business** (campo *Partner*
+  = `OB`, `Orange Business`, `OB - Orange Business`, …; el reconocimiento es
+  insensible a mayúsculas, acentos y puntuación). Ese ejecutable es la misma
+  app pero **de solo lectura**: no permite editar, crear, importar ni
+  conectar carpetas, y no escribe nada en el navegador. El botón indica
+  además cuántas oportunidades y con qué valor exacto de *Partner* ha
+  encontrado (útil para confirmar la grafía real).
 - **Se actualiza solo**: cuando el equipo tiene conectada la carpeta
-  compartida, cada guardado regenera automáticamente esa copia en
-  `DB_CRM/OB/CRM-OB.html`. Basta con **compartir esa subcarpeta** (por
-  ejemplo en SharePoint) con el partner: verá siempre la versión al día,
-  aislada del resto de datos del equipo.
+  compartida, cada guardado regenera automáticamente ese ejecutable en una
+  **carpeta nueva e independiente** `CRM_OB/index.html`, hermana de
+  `DB_CRM` dentro de la raíz compartida. Basta con **compartir esa carpeta
+  `CRM_OB`** (por ejemplo en SharePoint) con el partner: verá siempre la
+  versión al día, aislada del resto de datos del equipo.
 
 ## Seguridad y robustez
 

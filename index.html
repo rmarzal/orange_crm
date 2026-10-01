@@ -511,7 +511,7 @@
   <section class="panel" id="table">
     <div class="toolbar">
       <div class="grow"></div>
-      <button class="reset" id="export-partner" title="Genera una copia de solo lectura del CRM con los datos únicamente del partner Orange Business (OB), para compartir en otra carpeta">⬇ Exportar vista partner (OB)</button>
+      <button class="reset" id="export-partner" title="Genera el ejecutable del CRM (index.html) en una carpeta nueva que elijas, de solo lectura y con los datos únicamente del partner Orange Business (OB)">⬇ Generar CRM de partner (OB)</button>
       <button class="reset" id="export">⬇ Exportar CSV</button>
     </div>
     <div class="filters" id="filters2"></div>
@@ -571,7 +571,7 @@
         <li><b>Embudo &amp; Dashboard:</b> KPIs, embudo (por nº o €) y reparto.</li>
         <li><b>Reports:</b> informe sencillo por BDM con número e importe por etapa y las cinco propuestas de mayor importe. La redacción analiza todas las métricas visibles: pipeline, cierres, win rate, reparto, concentración y calidad del dato. El texto y las propuestas se pueden editar o quitar del informe. Permite descargar un Word editable, guardar el informe como PDF o <b>«Rellenar plantilla»</b> (genera un PowerPoint de seguimiento del BDM seleccionado a partir de la plantilla incrustada: ganadas, ofertas presentadas, oportunidades en elaboración, totales, previsión —ganado + 80 % de lo presentado— y % sobre el objetivo de 0,6 M €).</li>
         <li><b>Filtro por Partner:</b> en la barra de filtros puedes acotar por partner, igual que por Territorio, BDM, KAM, Sector, Tipología o Estado.</li>
-        <li><b>Vista de partner (OB):</b> en <b>Registros</b>, «Exportar vista partner (OB)» crea una copia del CRM <b>de solo lectura</b> con los datos únicamente de Orange Business, para compartir en otra carpeta. Con la carpeta compartida conectada, esa copia se regenera sola en <span class="mono">DB_CRM/OB/</span> en cada guardado.</li>
+        <li><b>CRM de partner (OB):</b> en <b>Registros</b>, «Generar CRM de partner (OB)» crea el <b>mismo ejecutable del CRM</b> (<span class="mono">index.html</span>) en una <b>carpeta nueva</b> que elijas, <b>de solo lectura</b> y con los datos únicamente de Orange Business. Con la carpeta compartida conectada, además se regenera solo en la carpeta nueva <span class="mono">CRM_OB/</span> (junto a <span class="mono">DB_CRM</span>) en cada guardado. Comparte esa carpeta con el partner.</li>
         <li><b>Tablero:</b> Kanban con arrastrar y soltar para cambiar el estado (queda en el histórico). Cada tarjeta tiene un botón <b>⧉</b> (arriba a la derecha) para <b>duplicar</b> la oportunidad.</li>
         <li><b>Revisión:</b> duplicados, sin clasificar, casos marcados con 🚩 para revisar y papelera de eliminadas.</li>
         <li><b>Nueva oportunidad:</b> alta manual.</li>
@@ -700,9 +700,21 @@ const LS_KEY="pipeline_proto_v13";
    interfaz de edición. La copia se regenera sola en cada guardado del equipo. */
 const PARTNER_VIEW=(typeof window!=="undefined"&&window.__PARTNER__&&window.__PARTNER__.name)?String(window.__PARTNER__.name):"";
 /* Config del partner Orange Business (lado equipo): qué valores del campo «partner»
-   se consideran OB y en qué subcarpeta de DB_CRM se publica su copia. */
-const OB_NAME="Orange Business",OB_DIR="OB",OB_FILE="CRM-OB.html";
-function isOBPartner(v){const k=normKey(v);return k==="ob"||k.includes("orange business")||k.includes("ob orange")||/^ob[\s\-_]/.test(k);}
+   se consideran OB, y dónde se publica su copia: una carpeta NUEVA «CRM_OB» (hermana
+   de DB_CRM, en la raíz compartida) con el MISMO ejecutable del CRM (index.html). */
+const OB_NAME="Orange Business",OB_FOLDER="CRM_OB",OB_FILE="index.html";
+/* Reconoce las variantes habituales de «Orange Business» (OB, O.B., «OB - Orange
+   Business», «Orange Business España»…) de forma insensible a mayúsculas, acentos y
+   puntuación. No confunde con la marca «Orange» a secas: exige «orange business»
+   junto o el token suelto «ob». */
+function isOBPartner(v){
+  const k=normKey(v).replace(/[._/\-]+/g," ").replace(/\s+/g," ").trim();
+  if(!k)return false;
+  if(k.includes("orange business"))return true;
+  if(k.split(" ").includes("ob"))return true;
+  return k.replace(/ /g,"")==="ob";   // «O.B.», «O B»
+}
+function obPartnerValues(){return [...new Set(DATA.map(d=>d.partner))].filter(v=>isOBPartner(v));}
 const MOTIVOS_KO=["Precio / presupuesto","No encaja la solución","Sin partner adecuado","Timing / pausado","Competencia","Requisitos no cubiertos","Otro"];
 const KO_DEFAULT_AOV=40000;   // valor por defecto para oportunidades perdidas sin importe
 
@@ -1854,8 +1866,12 @@ async function scanConflicts(){const list=[];try{for await(const hh of cloud.dir
 async function refreshOther(){const lock=await readJson(LOCK_FILE);cloud.other=(lock&&lock.user&&lock.user!==cloudUser()&&nowMs()-(lock.ts||0)<LOCK_TTL)?lock.user:null;await scanConflicts();renderCloudBar();}
 /* ===== Copia de solo lectura para el partner Orange Business =====
    Construye un HTML autocontenido con los datos SOLO de OB e inyecta window.__PARTNER__
-   para que la app arranque en modo solo lectura. Se puede exportar a mano o se
-   regenera sola en cada guardado del equipo dentro de DB_CRM/OB/. */
+   para que la app arranque en modo solo lectura. Se puede exportar a mano (a una carpeta
+   que elijas) o se regenera sola en cada guardado del equipo en la carpeta nueva CRM_OB/. */
+async function writeExecutable(dir,html){
+  const fh=await dir.getFileHandle(OB_FILE,{create:true});
+  const w=await fh.createWritable();await w.write(html);await w.close();
+}
 function buildPartnerHtml(partnerName){
   const data=DATA.filter(d=>isOBPartner(d.partner));
   const root=document.documentElement.cloneNode(true);
@@ -1869,20 +1885,39 @@ function buildPartnerHtml(partnerName){
   const head=root.querySelector("head");head.insertBefore(boot,head.firstChild);
   return "<!DOCTYPE html>\n"+root.outerHTML;
 }
-function exportPartnerView(){
-  const data=DATA.filter(d=>isOBPartner(d.partner));
-  if(!data.length){uiNotice("No hay oportunidades del partner "+OB_NAME+" (campo «partner»)");return;}
-  repDownload(buildPartnerHtml(OB_NAME),"text/html;charset=utf-8",OB_FILE);
-  uiNotice("Vista de "+OB_NAME+" exportada ("+data.length+" oportunidades) · solo lectura");
+async function exportPartnerView(){
+  const vals=obPartnerValues();
+  if(!vals.length){
+    const all=[...new Set(DATA.map(d=>d.partner).filter(Boolean))];
+    uiNotice(all.length
+      ? "No encontré el partner «Orange Business». Valores de «Partner» en tus datos: "+all.join(" · ")+". Dime cuál es y lo ajusto."
+      : "Ninguna oportunidad tiene «Partner» asignado.");
+    return;
+  }
+  const n=DATA.filter(d=>isOBPartner(d.partner)).length,html=buildPartnerHtml(OB_NAME);
+  const info="("+n+" oportunidades · partner: "+vals.join(", ")+")";
+  // Preferimos escribir el ejecutable en una carpeta NUEVA que elijas (File System Access).
+  if(fsSupported()){
+    try{
+      const dir=await window.showDirectoryPicker({mode:"readwrite",id:"crm-ob-export"});
+      await writeExecutable(dir,html);
+      uiNotice("CRM de "+OB_NAME+" generado en la carpeta elegida como «"+OB_FILE+"» "+info+" · solo lectura");
+      return;
+    }catch(e){if(e&&e.name==="AbortError")return;}   // si falla la escritura, caemos a descarga
+  }
+  repDownload(html,"text/html;charset=utf-8",OB_FILE);
+  uiNotice("CRM de "+OB_NAME+" descargado como «"+OB_FILE+"» "+info+" · colócalo en su carpeta");
 }
-/* regenera la copia del partner en la carpeta compartida (DB_CRM/OB/CRM-OB.html) */
+/* regenera el ejecutable del partner en una carpeta NUEVA de la raíz compartida:
+   CRM_OB/index.html (hermana de DB_CRM, aislada del resto de datos del equipo). */
 async function writePartnerBuild(){
-  if(PARTNER_VIEW||!cloud||!cloud.connected||!cloud.dir)return;
+  if(PARTNER_VIEW||!cloud||!cloud.connected)return;
+  const root=cloud.parent||cloud.dir;if(!root)return;
+  if(!DATA.some(d=>isOBPartner(d.partner)))return;   // sin datos de OB no se genera nada
   try{
     const html=buildPartnerHtml(OB_NAME);
-    const sub=await cloud.dir.getDirectoryHandle(OB_DIR,{create:true});
-    const fh=await sub.getFileHandle(OB_FILE,{create:true});
-    const w=await fh.createWritable();await w.write(html);await w.close();
+    const dir=await root.getDirectoryHandle(OB_FOLDER,{create:true});
+    await writeExecutable(dir,html);
   }catch(e){}
 }
 async function pushNow(){
