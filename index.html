@@ -345,7 +345,7 @@
       <h1>Pipeline Comercial · Funnel & Seguimiento</h1>
       <span id="rec-count" hidden></span>
     </div>
-    <span class="proto-tag">Prototipo v13</span>
+    <span class="proto-tag" id="app-version">Versión v20</span>
   </header>
   <div id="cloudbar" class="cloudbar" style="display:none"></div>
 
@@ -897,7 +897,26 @@ if(TRASH===null){   // primera vez: reconstruye las ya eliminadas comparando los
   }catch(e){}
   saveTrash();
 }
-function save(){if(PARTNER_VIEW)return;try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}if(typeof schedulePush==="function")schedulePush();}
+/* Versión incremental visible en la cabecera: empieza en v20 y sube +1 con cada
+   cambio real de datos (se detecta por firma del snapshot; filtros/navegación no cuentan). */
+const APP_VER_BASE=20,LS_VER_KEY=LS_KEY+"_ver";
+function renderAppVersion(){if(PARTNER_VIEW)return;const el=document.getElementById("app-version");if(!el)return;let st=null;try{st=JSON.parse(localStorage.getItem(LS_VER_KEY));}catch(e){}el.textContent="Versión v"+(APP_VER_BASE+((st&&st.count)||0));}
+let appVerBaselined=false;
+function bumpAppVersion(){
+  if(PARTNER_VIEW)return;
+  let st=null;try{st=JSON.parse(localStorage.getItem(LS_VER_KEY));}catch(e){}
+  const count=(st&&typeof st.count==="number")?st.count:0;
+  const sig=docxCrc32(new TextEncoder().encode(snapshot()));
+  if(!appVerBaselined){            // primer guardado de la sesión: fija la línea base SIN sumar
+    appVerBaselined=true;
+    try{localStorage.setItem(LS_VER_KEY,JSON.stringify({count,sig}));}catch(e){}
+    renderAppVersion();return;
+  }
+  if(st&&st.sig===sig)return;      // sin cambios de datos respecto a la base
+  try{localStorage.setItem(LS_VER_KEY,JSON.stringify({count:count+1,sig}));}catch(e){}
+  renderAppVersion();
+}
+function save(){if(PARTNER_VIEW)return;try{localStorage.setItem(LS_KEY,JSON.stringify(DATA));}catch(e){}bumpAppVersion();if(typeof schedulePush==="function")schedulePush();}
 
 /* diálogos propios (confirm/alert nativos no funcionan en el iframe del artifact) */
 function uiNotice(msg,undo){const n=document.getElementById("notice");n.textContent=msg;
@@ -1322,7 +1341,7 @@ function repDocx(){
 /* ================= Rellenar plantilla PPTX (BDM seleccionado en Reports) =================
    Motor sin dependencias: lee la plantilla incrustada (base64), reescribe solo slide1.xml y
    chart1.xml conservando el resto de partes intactas (bytes crudos) y descarga el .pptx. */
-const PPTX_OBJETIVO=600000, PPTX_MAXROWS=6;
+const PPTX_OBJETIVO=600000, PPTX_MAXROWS=3;   // nº fijo de filas por columna (como la plantilla): solo las más representativas, sin desbordar
 function pptxZipRead(buf){
   const dv=new DataView(buf),u8=new Uint8Array(buf);let eocd=-1;
   for(let i=buf.byteLength-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
@@ -1359,9 +1378,12 @@ function pptxReplaceFrame(xml,name,fn){return xml.replace(/<p:graphicFrame>[\s\S
 function pptxFillListTable(xml,tableName,items,maxRows){
   return pptxReplaceFrame(xml,tableName,frame=>{
     const rows=frame.match(/<a:tr\b[\s\S]*?<\/a:tr>/g);if(!rows||!rows.length)return frame;
-    const tr0=rows[0];let list=items.slice(0,maxRows).map(it=>pptxMakeRow(tr0,it.name,it.amount));
-    if(items.length>maxRows)list.push(pptxMakeRow(tr0,"(+"+(items.length-maxRows)+" más)",""));
-    if(!list.length)list=[pptxMakeRow(tr0,"—","")];
+    // Solo las N más representativas (mayor importe) y SIEMPRE N filas exactas:
+    // se rellenan las que falten con filas vacías para que las 3 columnas queden
+    // alineadas y la tabla no crezca más allá de su caja en la plantilla.
+    const tr0=rows[0],top=items.slice(0,maxRows);
+    const list=[];
+    for(let i=0;i<maxRows;i++){const it=top[i];list.push(pptxMakeRow(tr0,it?it.name:"",it?it.amount:""));}
     return frame.replace(/(<\/a:tblGrid>)[\s\S]*(<\/a:tbl>)/,(m,a,b)=>a+list.join("")+b);
   });
 }
@@ -1923,11 +1945,16 @@ async function exportPartnerView(){
 async function writePartnerBuild(){
   if(PARTNER_VIEW||!cloud||!cloud.connected)return;
   const root=cloud.parent||cloud.dir;if(!root)return;
-  if(!DATA.some(d=>isOBPartner(d.partner)))return;   // sin datos de OB no se genera nada
+  const obRows=DATA.filter(d=>isOBPartner(d.partner));
+  if(!obRows.length)return;   // sin datos de OB no se genera nada
   try{
     const html=buildPartnerHtml(OB_NAME);
+    const sig=docxCrc32(new TextEncoder().encode(html));
+    if(cloud.lastOBSig===sig)return;   // la copia de OB no ha cambiado: no reescribe ni avisa
     const dir=await root.getDirectoryHandle(OB_FOLDER,{create:true});
     await writeExecutable(dir,html);
+    cloud.lastOBSig=sig;
+    uiNotice("Copia de OB actualizada · "+obRows.length+" oportunidades ("+OB_FOLDER+"/)");
   }catch(e){}
 }
 async function pushNow(){
