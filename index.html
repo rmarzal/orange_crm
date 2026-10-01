@@ -1850,7 +1850,7 @@ async function connectDir(handle,ask){
   await idbSet("dir",handle);
   if(ask)askUser();
   await pullData(true);startPoll();renderCloudBar();uiNotice("Carpeta compartida conectada · datos en "+DB_SUBDIR+"/");
-  await writePartnerBuild();   // crea/actualiza ya CRM_OB/index.html al conectar
+  await writePartnerBuild();   // crea/actualiza CRM_OB/index.html al conectar (por si no hubo cambios en el pull)
 }
 async function tryReconnect(){const h=await idbGet("dir");if(!h)return;try{const q=await h.queryPermission({mode:"readwrite"});cloud.parent=h;cloud.connected=true;cloud.needGesture=(q!=="granted");if(!cloud.needGesture){cloud.dir=await resolveDataDir(h);await pullData(true);startPoll();await writePartnerBuild();}renderCloudBar();}catch(e){}}
 async function ensureFile(){const cur=await readJson(CLOUD_FILE);if(cur)return;cloud.version=1;await writeJson(CLOUD_FILE,{version:1,updatedAt:new Date().toISOString(),updatedBy:cloudUser()||"—",data:DATA,trash:TRASH});cloud.lastSnap=snapshot();}
@@ -1868,6 +1868,7 @@ async function pullData(initial){
     DATA=clean_;TRASH=Array.isArray(doc.trash)?doc.trash.filter(t=>t&&typeof t==="object"):TRASH;cloud.version=doc.version||0;
     nextId=Math.max(0,...DATA.map(d=>d.id))+1;cloud.lastSnap=snapshot();
     save();buildAllFilters();render();
+    await writePartnerBuild();   // al recibir datos nuevos del equipo, refresca la copia de OB
   }else if(initial){await ensureFile();}
   await refreshOther();
 }
