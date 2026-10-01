@@ -1908,6 +1908,7 @@ function buildPartnerHtml(partnerName){
   const data=DATA.filter(d=>isOBPartner(d.partner));
   const root=document.documentElement.cloneNode(true);
   ["filters","filters2","filters3","filters4","kpis","funnel","breakdown","kanban","duplist","uncls","revisar","trash","report","cloudbar","notice","dup-summary","uncls-summary","revisar-summary","trash-summary","tbody"].forEach(id=>{const el=root.querySelector("#"+id);if(el)el.innerHTML="";});
+  const nt=root.querySelector("#notice");if(nt)nt.className="notice";   // sin estado transitorio del toast en la copia
   const tpl=root.querySelector("#pptx-template");if(tpl)tpl.remove(); // no incluir la plantilla (~2 MB) en la copia del partner
   // fija la pestaña «Embudo & Dashboard» como activa en la copia
   root.querySelectorAll('nav.tabs button[role="tab"]').forEach(b=>b.setAttribute("aria-selected",b.dataset.tab==="dash"?"true":"false"));
@@ -1946,15 +1947,16 @@ async function writePartnerBuild(){
   if(PARTNER_VIEW||!cloud||!cloud.connected)return;
   const root=cloud.parent||cloud.dir;if(!root)return;
   const obRows=DATA.filter(d=>isOBPartner(d.partner));
-  if(!obRows.length)return;   // sin datos de OB no se genera nada
   try{
+    // La firma se calcula SOLO sobre los datos de OB: así un cambio real siempre
+    // regenera, y cambios ajenos a OB (o estado transitorio de UI) no reescriben.
+    const sig=docxCrc32(new TextEncoder().encode(JSON.stringify(obRows)));
+    if(cloud.lastOBSig===sig)return;   // los datos de OB no han cambiado
     const html=buildPartnerHtml(OB_NAME);
-    const sig=docxCrc32(new TextEncoder().encode(html));
-    if(cloud.lastOBSig===sig)return;   // la copia de OB no ha cambiado: no reescribe ni avisa
     const dir=await root.getDirectoryHandle(OB_FOLDER,{create:true});
     await writeExecutable(dir,html);
     cloud.lastOBSig=sig;
-    uiNotice("Copia de OB actualizada · "+obRows.length+" oportunidades ("+OB_FOLDER+"/)");
+    uiNotice("Copia de OB actualizada · "+obRows.length+" oportunidad"+(obRows.length===1?"":"es")+" ("+OB_FOLDER+"/)");
   }catch(e){}
 }
 async function pushNow(){
