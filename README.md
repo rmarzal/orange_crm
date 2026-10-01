@@ -53,7 +53,12 @@ pública: es un fichero que se reparte y se abre en local.
 - Normalización de caracteres: acentos, mayúsculas y espacios no
   diferencian valores (`Rubén` = `Ruben` = `RUBEN`).
 - Canonicalización de sector, tipología, KAM y cliente (variantes
-  equivalentes se unifican).
+  equivalentes se unifican). La **tipología** se normaliza a una taxonomía
+  de 13 categorías (Agentes IA, Automatización y RPA, Consultoría y
+  Formación, Data y Analítica, Gestión Documental y Pliegos, Gobierno IA,
+  IA Contact Center, IA Generativa (transversal), Live Intelligence,
+  Machine Learning e IA Clásica, Transcripción e Insights, Visión
+  Artificial y Otros); el formulario ofrece esas categorías.
 - Semestre automático derivado de la fecha de apertura.
 - Precio por defecto de 40.000 € para oportunidades *Perdida / KO* sin
   importe; motivo de KO obligatorio.
