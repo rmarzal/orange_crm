@@ -1395,7 +1395,7 @@ function pptxBuildModel(bdm,rows){
     prevWonText:eur(won),prevPresText:eur(0.8*pres),
     conseguido:Math.round(won),pendiente:Math.round(Math.max(PPTX_OBJETIVO-won,0))};
 }
-function pptxFilename(bdm){const owner=normKey(bdm||repBdm||"equipo").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"bdm";return `seguimiento-${owner}-${repToday()}.pptx`;}
+function pptxFilename(){const owner=normKey(repBdm||"equipo").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"bdm";return `seguimiento-${owner}-${repToday()}.pptx`;}
 async function fillTemplatePptx(){
   const el=document.getElementById("pptx-template");
   const b64=(el?el.textContent:"").replace(/\s+/g,"");
@@ -1405,19 +1405,15 @@ async function fillTemplatePptx(){
   const slideName=parsed.order.find(n=>/ppt\/slides\/slide1\.xml$/.test(n));
   const chartName=parsed.order.find(n=>/ppt\/charts\/chart1\.xml$/.test(n));
   if(!slideName){uiNotice("La plantilla no tiene slide1.xml");return;}
-  // La plantilla es SIEMPRE de un BDM concreto: usa el del desplegable de Reports;
-  // si está en «Todo el equipo», cae al filtro BDM; si no hay ninguno, no genera.
-  const bdm=repBdm||state.bdm||"";
-  if(!bdm){uiNotice("Selecciona un BDM en el desplegable «Informe de BDM» para rellenar su plantilla");return;}
   const dec=new TextDecoder(),encdr=new TextEncoder();
-  const rows=DATA.filter(d=>repOwner(d)===bdm),model=pptxBuildModel(bdm,rows);
+  const rows=DATA.filter(d=>!repBdm||repOwner(d)===repBdm),model=pptxBuildModel(repBdm,rows);
   let slideXml=dec.decode(await inflateEntry(buf,parsed.entries[slideName]));
   slideXml=pptxFillSlide(slideXml,model);
   const replaced={};replaced[slideName]=encdr.encode(slideXml);
   if(chartName){let chartXml=dec.decode(await inflateEntry(buf,parsed.entries[chartName]));chartXml=pptxFillChart(chartXml,model.conseguido,model.pendiente);replaced[chartName]=encdr.encode(chartXml);}
   const out=pptxZipRebuild(buf,parsed,replaced);
-  repDownload(out,"application/vnd.openxmlformats-officedocument.presentationml.presentation",pptxFilename(bdm));
-  uiNotice("Plantilla rellenada · "+bdm);
+  repDownload(out,"application/vnd.openxmlformats-officedocument.presentationml.presentation",pptxFilename());
+  uiNotice("Plantilla rellenada · "+(repBdm||"Todo el equipo"));
 }
 function repCsv(){
   const rows=reportTopRows(DATA.filter(d=>!repBdm||repOwner(d)===repBdm),repBdm||"__all__");
