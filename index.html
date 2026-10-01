@@ -325,11 +325,15 @@
     .rep-section h3,.rep-stage summary{break-after:avoid}
   }
   /* Vista de partner (solo lectura): oculta edición y controles internos del equipo */
-  body.partner-view nav.tabs button[data-tab="board"],
+  /* En la copia de partner solo quedan Embudo & Dashboard, Tablero (Kanban) y Registros */
   body.partner-view nav.tabs button[data-tab="dups"],
+  body.partner-view nav.tabs button[data-tab="reports"],
   body.partner-view nav.tabs button[data-tab="form"],
+  body.partner-view nav.tabs button[data-tab="help"],
   body.partner-view #cloudbar,
   body.partner-view .wrap>.note,
+  body.partner-view #board-add,
+  body.partner-view .kc-dup-btn,
   body.partner-view #rep-pptx,
   body.partner-view #export-partner{display:none!important}
   body.partner-view header.top .proto-tag{background:var(--accent);color:#fff}
