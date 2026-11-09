@@ -2078,4 +2078,17 @@ if(PARTNER_VIEW){
 }
 </script>
 
+<!-- Webcall (LiveKit) -->
+<script>
+    (function () {
+        const s = document.createElement("script");
+        s.src = "https://s3.eu-west-1.amazonaws.com/livekit.webcall.bundles/channel-bundles/01058868-542b-4813-a9ea-c120597623c0/cefddf70-c7dd-401b-abc4-848b49cef9ff/cefddf70-c7dd-401b-abc4-848b49cef9ff.bundle.js";
+        s.charset = "UTF-8";
+        s.onload = function () {
+            window.Webcall.init();
+        };
+        document.head.appendChild(s);
+    })();
+</script>
+
 </html>
